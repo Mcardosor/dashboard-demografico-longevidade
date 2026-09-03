@@ -83,13 +83,36 @@ def test_nao_pede_ladrilho_a_ninguem(todas_ufs):
         assert fornecedor not in texto
     assert not spec.get("mapProvider")
 
+    # O que este teste **não** alcança: o basemap que o frontend do Streamlit
+    # acrescenta por conta própria quando o spec não manda estilo. Isso não
+    # aparece no JSON e só se vê no painel de rede do navegador — foi assim
+    # que passou despercebido. Quem cobre esse flanco é
+    # `test_estilo_vazio_e_explicito`.
+
 
 def test_nao_emite_o_sentinela_de_estilo(todas_ufs):
     """Sem `map_style=None` explícito, o pydeck deixa `__MAP_STYLE__` no spec
     e o deck.gl o busca como URL relativa a cada render — 200 com o
     `index.html` do Streamlit, e "Unexpected token '<'" no console."""
     spec = json.loads(mapa.deck(_dados(todas_ufs), TEMA).to_json())
-    assert "mapStyle" not in spec
+    assert spec.get("mapStyle") != "__MAP_STYLE__"
+
+
+def test_estilo_vazio_e_explicito(todas_ufs):
+    """O spec traz uma folha de estilo vazia, e não a ausência de estilo.
+
+    Este teste nasceu de um defeito que chegou em produção. A versão anterior
+    apenas **omitia** `mapStyle`, e o teste checava a omissão — o que passava
+    enquanto o painel no ar desenhava um basemap do Mapbox por baixo da
+    malha, porque sem estilo o Streamlit aplica o padrão dele.
+
+    Estilo vazio é uma afirmação; ausência de estilo é um convite ao padrão
+    alheio.
+    """
+    spec = json.loads(mapa.deck(_dados(todas_ufs), TEMA).to_json())
+    assert spec["mapStyle"] == {"version": 8, "sources": {}, "layers": []}
+    assert spec["mapStyle"]["sources"] == {}, "fonte de ladrilho no estilo"
+    assert spec["mapStyle"]["layers"] == [], "camada de basemap no estilo"
 
 
 # ── Enquadramento ────────────────────────────────────────────────────────────

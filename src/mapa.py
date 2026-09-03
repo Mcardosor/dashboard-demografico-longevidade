@@ -59,6 +59,21 @@ RAMPA = ("#084c96", "#2B7BB9", "#63b3ed")
 #: Cor de quem não tem dado. Precisa ser distinguível de qualquer tom da rampa.
 SEM_DADO = "#E5E7EB"
 
+#: Folha de estilo **vazia**, no formato do MapLibre/Mapbox GL: sem fontes e
+#: sem camadas. É o que garante que nenhum ladrilho seja pedido a ninguém.
+#:
+#: Não basta omitir `mapStyle` do spec. O frontend do Streamlit, quando não
+#: recebe estilo, aplica o **padrão dele** — que é `mapbox://styles/...` e
+#: dispara `api.mapbox.com` e `events.mapbox.com` (este último, telemetria).
+#: Foi o que aconteceu em produção: trocar a CARTO por um `map_style=None`
+#: trocou um fornecedor de ladrilho por outro. O `map_style=None` do pydeck
+#: significa "deixe o Streamlit escolher pelo tema", e não "não desenhe mapa".
+#:
+#: O `mapStyle` do react-map-gl aceita string **ou objeto**. Com um objeto
+#: sem fontes, a biblioteca não tem o que buscar: não resolve `mapbox://`,
+#: não precisa de token e não fala com ninguém.
+ESTILO_VAZIO = {"version": 8, "sources": {}, "layers": []}
+
 
 def _rgb(cor: str) -> list[int]:
     """`#RRGGBB` para `[r, g, b]`, que é como o deck.gl espera."""
@@ -247,7 +262,7 @@ def _geometrias(ufs: tuple[str, ...]) -> list[dict]:
 
 
 def _compactar(mapa_deck: pydeck.Deck) -> None:
-    """Faz o deck serializar sem indentação.
+    """Fixa o spec final: sem indentação e sem basemap.
 
     O `pydeck.serialize` chama ``json.dumps(..., indent=2)`` e o
     ``st.pydeck_chart`` envia ao navegador exatamente o que ``to_json()``
@@ -263,12 +278,12 @@ def _compactar(mapa_deck: pydeck.Deck) -> None:
     try:
         from pydeck.bindings.json_tools import default_serialize
 
-        compacto = json.dumps(
-            mapa_deck,
-            sort_keys=True,
-            default=default_serialize,
-            separators=(",", ":"),
-        )
+        spec = json.loads(json.dumps(mapa_deck, default=default_serialize))
+        # O pydeck recusa `map_style` como dict a menos que o provedor seja
+        # "mapbox", então o estilo vazio entra aqui, onde o spec final já é
+        # nosso. Ver ESTILO_VAZIO para o porquê de ele ser necessário.
+        spec["mapStyle"] = ESTILO_VAZIO
+        compacto = json.dumps(spec, sort_keys=True, separators=(",", ":"))
     # Captura ampla de propósito: otimização não pode derrubar o mapa. E
     # `Exception`, nunca `BaseException` — `RerunException` herda desta última
     # justamente para atravessar blocos como este.
@@ -341,15 +356,14 @@ def deck(df_idosos: pd.DataFrame, t: dict) -> pydeck.Deck:
             height=ALTURA,
         ),
         map_provider=None,
-        # `map_style=None` **explícito**, e não omitido. Só com `map_provider`
-        # nulo o pydeck ainda emite `mapStyle: "__MAP_STYLE__"`, um sentinela
-        # que ele espera substituir depois. O deck.gl não sabe disso: lê a
-        # string como URL relativa e busca
-        # `/cenarios/demografico/__MAP_STYLE__` a cada render. O Streamlit
-        # responde 200 com o `index.html`, o deck tenta parsear HTML como
-        # JSON e o console enche de "Unexpected token '<'". Uma requisição
-        # inútil por render, achada no painel de rede. Passando `None` a
-        # chave some do spec.
+        # `map_style=None` tira do spec o sentinela `__MAP_STYLE__` que o
+        # pydeck emitiria — uma string que o deck.gl busca como URL relativa
+        # a cada render, recebendo o `index.html` do Streamlit e enchendo o
+        # console de "Unexpected token '<'".
+        #
+        # Mas `None` **não** significa "sem mapa": o Streamlit entende como
+        # "escolha o estilo pelo tema" e aplica o dele, que é Mapbox. Quem
+        # de fato remove o basemap é o ESTILO_VAZIO injetado em `_compactar`.
         map_style=None,
         tooltip={
             "html": (
