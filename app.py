@@ -1,5 +1,5 @@
 """
-app.py — Dashboard Demográfico Brasil (Streamlit + Plotly + pydeck).
+app.py — Dashboard Demográfico Longevidade (Streamlit + Plotly + pydeck).
 
 Distribuição etária, proporção de idosos e evolução populacional por
 estado, a partir das Projeções de População do IBGE (2010-2025).
@@ -18,7 +18,7 @@ from src.utils import PLOTLY_CFG, REGIOES, _fmt, _delta_html, kpi_card, section_
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Dashboard Demográfico | UF",
+    page_title="Dashboard Demográfico | Longevidade",
     page_icon="🗺️",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -137,7 +137,7 @@ if st.session_state.theme == "light":
     <div class="cenarios-bar">
       <span class="cenarios-bar-logo">Cenários<span>+</span></span>
       <span class="cenarios-bar-sep">|</span>
-      <span class="cenarios-bar-title">Dashboard Demográfico</span>
+      <span class="cenarios-bar-title">Dashboard Demográfico — Longevidade</span>
     </div>
     """, unsafe_allow_html=True)
 
@@ -181,7 +181,7 @@ _label_ufs = (
 
 st.markdown(f"""
 <div class="hero">
-  <h1 class="hero-title">🗺️ Dashboard Demográfico — Brasil</h1>
+  <h1 class="hero-title">🗺️ Dashboard Demográfico — Longevidade</h1>
   <p class="hero-subtitle">
     Análise demográfica com distribuição etária, proporção de idosos,
     pirâmide populacional e evolução histórica por estado.

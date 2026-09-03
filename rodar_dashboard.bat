@@ -13,5 +13,5 @@ if %errorlevel% neq 0 (
 
 pip install -r requirements.txt --quiet
 
-start http://localhost:8501
-streamlit run app.py --server.port 8501
+start http://localhost:8508
+streamlit run app.py --server.port 8508

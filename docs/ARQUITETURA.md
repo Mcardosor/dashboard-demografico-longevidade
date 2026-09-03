@@ -45,13 +45,15 @@ Não há camada de API nem banco de dados — tudo roda no processo do Streamlit
 
 ## Ambiente e variáveis
 
-Nenhuma variável de ambiente é necessária — não há credenciais, banco ou serviço externo. `.streamlit/config.toml` fixa `baseUrlPath = "cenarios/demografico"` (precisa bater com a rota do proxy reverso em produção).
+Nenhuma variável de ambiente é necessária — não há credenciais, banco ou serviço externo. `.streamlit/config.toml` fixa `baseUrlPath = "cenarios/demografico-longevidade"` (precisa bater com a rota do proxy reverso em produção).
 
 ## Deploy
 
 - **Imagem:** `docker-compose.yml` builda a imagem a partir do `Dockerfile` (Python 3.11-slim + Streamlit), com `COPY . .` — o código vai embutido na imagem, não em bind mount (só `data/` é bind-mounted, read-only).
-- **Container:** `dashboard-demografico`, porta **8501**.
-- **Produção (VM):** `/home/matheusrodrigues/dashboard-demografico/`, exposto via nginx em `https://painel.cenarios.unb.br/cenarios/demografico` (proxy_pass pra `localhost:8501`).
+- **Container:** `dashboard-demografico-longevidade`, **8508** no host para **8501** no container. A 8501 do host é do painel `demografico`, que segue no ar.
+- **Produção (VM):** `/home/matheusrodrigues/dashboard-demografico-longevidade/`, exposto via nginx em `https://painel.cenarios.unb.br/cenarios/demografico-longevidade` (proxy_pass pra `localhost:8508`).
+
+  O `location` do nginx é prefixo sem barra final, e `/cenarios/demografico` casaria também com `/cenarios/demografico-longevidade`. Quem resolve é a regra do prefixo mais longo, que faz a rota deste painel vencer — mas as duas precisam existir, e mexer numa exige testar a outra.
 - **Rebuild após mudança de código:** como o código é `COPY`, uma alteração em `app.py`/`src/` exige `docker compose up -d --build` (bind mount não é suficiente pra pegar a mudança).
 
 ## Limitações conhecidas

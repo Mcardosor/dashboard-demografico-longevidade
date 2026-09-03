@@ -3,7 +3,7 @@ fileWatcherType = "none"
 runOnSave = false
 maxUploadSize = 50
 maxMessageSize = 400
-baseUrlPath = "cenarios/demografico"
+baseUrlPath = "cenarios/demografico-longevidade"
 
 [client]
 toolbarMode = "viewer"

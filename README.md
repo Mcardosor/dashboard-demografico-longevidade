@@ -1,10 +1,22 @@
-# Dashboard Demográfico — Brasil
+# Dashboard Demográfico — Longevidade
 
 Visualização da distribuição etária da população brasileira por estado, com foco no envelhecimento populacional (2010–2025), a partir das Projeções de População do IBGE.
 
 ![preview do dashboard](docs/preview.png)
 
-Acesso: https://painel.cenarios.unb.br/cenarios/demografico
+Acesso: https://painel.cenarios.unb.br/cenarios/demografico-longevidade
+
+## Relação com o `dashboard-demografico`
+
+Este painel nasceu como cópia do
+[dashboard-demografico](https://github.com/Mcardosor/dashboard-demografico) —
+o histórico é o mesmo até o commit `1d89ac2`, que trouxe o mapa em pydeck.
+Os dois convivem no ar, em rotas e portas diferentes, e daqui pra frente
+divergem: este recebe identidade visual própria.
+
+O que já é diferente: rota `/cenarios/demografico-longevidade`, porta 8508 no
+host, container `dashboard-demografico-longevidade` e o nome exibido. O
+restante ainda é idêntico — **a aparência é o trabalho pendente**.
 
 ## Conteúdo
 
@@ -42,13 +54,13 @@ Acesso: https://painel.cenarios.unb.br/cenarios/demografico
 ## Como rodar
 
 ```bash
-git clone https://github.com/Mcardosor/dashboard-demografico
-cd dashboard-demografico
+git clone https://github.com/Mcardosor/dashboard-demografico-longevidade
+cd dashboard-demografico-longevidade
 pip install -r requirements.lock.txt
 streamlit run app.py
 ```
 
-Acesse em `http://localhost:8501`. Python 3.11 (a imagem de produção é `python:3.11-slim`).
+Acesse em `http://localhost:8508`. Python 3.11 (a imagem de produção é `python:3.11-slim`).
 
 ## Testes e scripts
 
