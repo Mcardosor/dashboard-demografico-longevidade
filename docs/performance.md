@@ -175,6 +175,55 @@ Uma requisição inútil por render — invisível nos testes que eu tinha, acha
 no painel de rede do navegador. `test_nao_emite_o_sentinela_de_estilo`
 existe para a próxima não passar batido.
 
+## 5. O basemap voltou sem ninguém notar — e como foi pego
+
+Registrado em 03/set/2026, depois do painel Longevidade ir ao ar com o defeito.
+
+O commit que tirou o sentinela `__MAP_STYLE__` do spec (item 4 acima) passou
+`map_style=None`. **No pydeck, `None` não significa "sem mapa":** significa
+"deixe o Streamlit escolher o estilo pelo tema". Sem estilo no spec, o
+frontend aplicou o padrão dele — `mapbox://styles/mapbox/light-v8` — e o
+painel voltou a puxar ladrilhos, sprites, fontes e **telemetria**
+(`events.mapbox.com`), com um token de demonstração embutido na versão de
+`react-map-gl` que o Streamlit empacota.
+
+Trocamos a CARTO por outro fornecedor de ladrilho sem perceber. O item 4
+tinha resolvido uma requisição inútil por render e criado nove.
+
+**Por que os testes não pegaram.** Eles liam o spec, e o basemap era
+acrescentado pelo frontend, fora do spec. Nenhum teste unitário sobre o JSON
+podia ver isso. `test_estilo_vazio_e_explicito` passa a exigir um estilo
+vazio em vez da *ausência* de estilo — ausência é convite ao padrão alheio —,
+mas o flanco real só se vê no painel de rede do navegador, e isso está
+anotado dentro do próprio teste.
+
+**Por que a verificação local não pegou.** Verifiquei em `localhost`, numa
+rede que bloqueia `api.mapbox.com` — a mesma que bloqueia `github.com` e que
+obrigou a subir o primeiro commit pela API. Os ladrilhos falhavam em silêncio
+e o mapa aparecia limpo. **Falso negativo por rede quebrada**: o ambiente de
+teste era mais restritivo que o de produção, então escondeu o defeito em vez
+de revelá-lo.
+
+**A correção, em duas tentativas.** Primeiro um objeto
+`{"version": 8, "sources": {}, "layers": []}` no `mapStyle`. Não bastou: o
+servidor mandava o objeto certo — conferido dentro do container —, mas o
+frontend descarta objeto e cai no padrão. O que funciona é o mesmo estilo
+como **`data:` URI**: string, então sobrevive até o componente, e com o
+conteúdo embutido, então nem para buscar o estilo sai requisição.
+
+| Hosts externos por carga | Antes | Depois |
+|---|---:|---:|
+| `api.mapbox.com` | 8 requisições | **0** |
+| `events.mapbox.com` | 1 (telemetria) | **0** |
+
+Medido na URL pública, não em `localhost`.
+
+**A lição que fica.** "Não pede ladrilho a ninguém" é afirmação sobre o
+*navegador*, e só o navegador pode confirmá-la. Teste de spec verifica o que
+mandamos; o painel de rede verifica o que acontece. Para esta propriedade,
+apenas o segundo vale — e ele precisa rodar contra produção, ou contra uma
+rede que não minta por omissão.
+
 ---
 
 # Alvos presos em teste
