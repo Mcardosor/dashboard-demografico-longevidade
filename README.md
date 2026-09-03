@@ -34,6 +34,7 @@ restante ainda é idêntico — **a aparência é o trabalho pendente**.
 |---|---|
 | [Arquitetura](docs/ARQUITETURA.md) | Fluxo de dados ponta a ponta, módulos, deploy e limitações — comece por aqui |
 | [Documentação dos Gráficos](docs/DOCUMENTACAO_GRAFICOS.md) | Por que cada gráfico existe, como é calculado e o código |
+| [Deploy na VM](docs/deploy-vm.md) | Bootstrap na `cenarios-vm`: portas, rota do nginx e a pegadinha do prefixo |
 | [Performance](docs/performance.md) | Linha de base medida, o que foi otimizado e os alvos presos em teste |
 
 ## Filtros
