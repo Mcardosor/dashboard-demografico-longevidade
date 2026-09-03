@@ -21,6 +21,7 @@ Ver docs/performance.md para os números de antes e depois.
 
 from __future__ import annotations
 
+import base64
 import json
 import math
 from functools import lru_cache
@@ -69,10 +70,19 @@ SEM_DADO = "#E5E7EB"
 #: trocou um fornecedor de ladrilho por outro. O `map_style=None` do pydeck
 #: significa "deixe o Streamlit escolher pelo tema", e não "não desenhe mapa".
 #:
-#: O `mapStyle` do react-map-gl aceita string **ou objeto**. Com um objeto
-#: sem fontes, a biblioteca não tem o que buscar: não resolve `mapbox://`,
-#: não precisa de token e não fala com ninguém.
-ESTILO_VAZIO = {"version": 8, "sources": {}, "layers": []}
+#: O estilo vai como **`data:` URI**, e não como objeto. O `mapStyle` do
+#: react-map-gl aceita os dois, mas o frontend do Streamlit descarta objeto e
+#: cai no padrão — medido: com o objeto no spec, o navegador ainda buscava
+#: `mapbox/light-v8`, sprites e fontes. Como `data:` URI o estilo é uma
+#: string, sobrevive ao caminho até o componente, e o conteúdo já vem embutido:
+#: nenhuma requisição sai para buscá-lo.
+#:
+#: Sem fontes e sem camadas, o mapbox-gl não tem o que carregar, não resolve
+#: `mapbox://`, não precisa de token e não chama ninguém.
+_ESTILO_VAZIO_JSON = {"version": 8, "sources": {}, "layers": []}
+ESTILO_VAZIO = "data:application/json;base64," + base64.b64encode(
+    json.dumps(_ESTILO_VAZIO_JSON, separators=(",", ":")).encode()
+).decode()
 
 
 def _rgb(cor: str) -> list[int]:

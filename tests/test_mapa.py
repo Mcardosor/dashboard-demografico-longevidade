@@ -109,10 +109,21 @@ def test_estilo_vazio_e_explicito(todas_ufs):
     Estilo vazio é uma afirmação; ausência de estilo é um convite ao padrão
     alheio.
     """
+    import base64
+
     spec = json.loads(mapa.deck(_dados(todas_ufs), TEMA).to_json())
-    assert spec["mapStyle"] == {"version": 8, "sources": {}, "layers": []}
-    assert spec["mapStyle"]["sources"] == {}, "fonte de ladrilho no estilo"
-    assert spec["mapStyle"]["layers"] == [], "camada de basemap no estilo"
+    estilo = spec["mapStyle"]
+
+    # String, e não objeto: o frontend do Streamlit descarta objeto e cai no
+    # padrão dele, que é Mapbox. Medido no painel de rede.
+    assert isinstance(estilo, str), "estilo como objeto volta a puxar Mapbox"
+    assert estilo.startswith("data:application/json;base64,"), estilo[:60]
+
+    # `data:` e não URL: o conteúdo vem embutido, então nem para buscar o
+    # estilo sai requisição.
+    conteudo = json.loads(base64.b64decode(estilo.split(",", 1)[1]))
+    assert conteudo["sources"] == {}, "fonte de ladrilho no estilo"
+    assert conteudo["layers"] == [], "camada de basemap no estilo"
 
 
 # ── Enquadramento ────────────────────────────────────────────────────────────
