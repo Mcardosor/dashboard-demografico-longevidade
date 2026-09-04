@@ -10,8 +10,10 @@ desenhado com pydeck e não usa basemap. O porquê está em docs/performance.md.
 """
 
 import streamlit as st
+import streamlit.components.v1  # noqa: F401  (usado como st.components.v1)
 
-from src.themes import THEMES, _css, inject_toggle, marca_html, ROXO_MARCA
+from src.themes import (THEMES, _css, inject_toggle, marca_html, ROXO_MARCA,
+                        script_travar_zoom)
 from src.data import anos_disponiveis, carregar_dados, carregar_evolucao, carregar_geojson
 from src.charts import processar_dados, fig_pizza, fig_piramide, fig_evolucao
 from src import mapa
@@ -275,6 +277,8 @@ with col_mapa:
         "Percentual da população com 60 anos ou mais em cada estado."), unsafe_allow_html=True)
     st.pydeck_chart(mapa.deck(df_id_filt, t), use_container_width=True)
     st.markdown(mapa.legenda(df_id_filt, t), unsafe_allow_html=True)
+    # Altura 0: o componente só carrega script, não desenha nada.
+    st.components.v1.html(script_travar_zoom(), height=0)
 
 with col_top5:
     st.markdown(section_header("02", "Estados mais envelhecidos",

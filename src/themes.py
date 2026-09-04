@@ -278,6 +278,15 @@ def _css(t: dict) -> str:
     color: rgba(255,255,255,.85);
   }}
 
+  /* Botões de zoom do mapa, escondidos.
+     Sem a roda do mouse eles seriam o único jeito de dar zoom — e zoom num
+     coroplético de recorte fixo não acrescenta leitura, só desenquadra. Eles
+     também carregam um defeito conhecido: o deck escuta o ponteiro no
+     wrapper, então clicar no botão navega o mapa junto (registrado em
+     `sinan/src/theme/componentes.py::script_travar_zoom`). Escondê-los evita
+     o defeito e a correção. */
+  .mapboxgl-ctrl-group, .maplibregl-ctrl-group {{ display: none !important; }}
+
   /* ── Misc ── */
   h2, h3 {{ color: {t['text_title']} !important; }}
   hr {{ border-color: {t['grid']} !important; margin: 24px 0 !important; }}
@@ -536,3 +545,41 @@ def inject_toggle() -> None:
     dark_css_escaped = _DARK_CSS.replace('\n', ' ').replace("'", "\'").replace('"', '\\"')
     js = _THEME_TOGGLE_JS.replace('DARK_CSS_PLACEHOLDER', f"'{dark_css_escaped}'")
     components.html(js, height=50, scrolling=False)
+
+
+#: Onde o mapa vive no DOM. Usado pela trava da roda do mouse.
+SELETOR_MAPA = '[data-testid="stDeckGlJsonChart"]'
+
+
+def script_travar_zoom() -> str:
+    """Impede que rolar a página com o cursor sobre o mapa dê zoom.
+
+    O caminho declarativo não existe: o `DeckGlJsonChart` do Streamlit passa
+    `controller={true}` fixo para o `<DeckGL>` e descarta o que vier no JSON
+    do pydeck. Está registrado em `sinan/src/theme/componentes.py`, que
+    tropeçou nisto antes.
+
+    A interceptação é na fase de **captura**, antes de o evento descer até o
+    deck.gl, e **sem `preventDefault`**: a rolagem normal da página continua
+    acontecendo. Só o zoom morre. Com `preventDefault` a página travaria sobre
+    o mapa, que é meia tela — trocaria um incômodo por outro pior.
+
+    Precisa rodar via `st.components.v1.html`: o `st.markdown` remove
+    `<script>`. O componente vira um iframe de mesma origem, daí o
+    `window.parent`.
+    """
+    return f"""
+<script>
+(function () {{
+  var doc = window.parent && window.parent.document;
+  if (!doc || doc.__travaZoomMapa) return;   // idempotente: o Streamlit
+  doc.__travaZoomMapa = true;                // reexecuta o script a cada rerun
+  doc.addEventListener('wheel', function (e) {{
+    var alvo = (e.target && e.target.closest) ? e.target : null;
+    if (alvo && alvo.closest('{SELETOR_MAPA}')) {{
+      e.stopPropagation();                   // sem preventDefault: a página rola
+    }}
+  }}, {{ capture: true, passive: true }});
+}})();
+</script>
+"""

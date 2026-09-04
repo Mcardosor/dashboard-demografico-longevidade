@@ -28,6 +28,23 @@ O custo assumido é que em 2025 dois terços das UFs caem na classe mais alta �
 o mapa perde distinção dentro do ano atual em troca de ser comparável entre
 anos.
 
+**A roda do mouse não dá zoom.** Rolar a página com o cursor sobre o mapa
+aplicava zoom e desenquadrava — e o mapa ocupa meia tela, então acontecia o
+tempo todo. O caminho declarativo não existe: o Streamlit passa
+`controller={true}` fixo ao `<DeckGL>` e descarta o que vier no JSON. A trava
+é no DOM, interceptando `wheel` na captura **sem** `preventDefault`, para a
+página seguir rolando. Os botões de zoom foram escondidos junto: sem a roda
+eles seriam o único jeito de desenquadrar, e zoom num coroplético de recorte
+fixo não acrescenta leitura.
+
+**O Distrito Federal ganha um disco.** No enquadramento do país ele mede uns
+9x5 px, e acertá-lo com o ponteiro era pontaria. `pickingRadius` não resolve
+— o deck só procura no raio quando não há nada sob o cursor, e o DF é cercado
+por Goiás; medido, a 6 px do DF o tooltip mostrava GO. O disco é o tratamento
+cartográfico usual para enclave pequeno: mesma cor da classe, para não
+inventar informação, e alvo de 14 px. Ele some sozinho quando o recorte
+aproxima e a UF já está grande.
+
 **Sem basemap.** Era um `choropleth_mapbox` sobre ladrilhos `carto-positron` até a CARTO passar a exigir chave — o painel em produção desenhava "API KEY REQUIRED" repetido sob a malha. Trocar de fornecedor de ladrilho só adiaria o problema: um coroplético por estado não precisa de rua nem de rio embaixo, a informação é a cor da UF. Sem ladrilho não há chave, nem requisição a terceiro, nem fornecedor que possa repetir isto.
 
 **A malha é pré-processada.** `scripts/preparar_geometria.py` roda uma vez e escreve `data/ufs.geojson`: simplificação topológica (85.585 → 4.469 vértices), 5 casas decimais e só a propriedade `sigla`. Só as UFs selecionadas são enviadas, e o spec sai sem indentação. O payload caiu de 1.953 KB para 98 KB no Brasil e 3 KB numa UF — ver [Performance](performance.md).

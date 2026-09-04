@@ -66,10 +66,20 @@ def test_payload_acompanha_o_filtro(todas_ufs):
 
 
 def test_spec_sai_sem_indentacao(todas_ufs):
-    """`_compactar` é o que impede o recuo de dominar o payload."""
+    """`_compactar` é o que impede o recuo de dominar o payload.
+
+    A verificação é a **quebra de linha**: o `json.dumps(indent=2)` do pydeck
+    põe cada número da geometria na sua linha, e era isso que fazia o recuo
+    virar três quartos do payload.
+
+    O teste também exigia que `", "` não aparecesse. Saiu quando o mapa ganhou
+    a camada de discos: o pydeck converte a lista de campos de um acessor em
+    `@@=[lon, lat]` — com espaço, e é a forma correta de referenciar campo numa
+    camada. Procurar `", "` media o acessor, não a indentação. O teto de bytes
+    em `test_payload_*` é a guarda de verdade.
+    """
     texto = mapa.deck(_dados(todas_ufs), TEMA).to_json()
     assert "\n" not in texto
-    assert ", " not in texto
 
 
 # ── Sem fornecedor de ladrilho ───────────────────────────────────────────────
@@ -347,3 +357,60 @@ def test_ilha_costeira_nao_e_descartada():
 def test_recorte_de_uma_parte_so_nao_quebra():
     """O DF é um polígono único — o caminho curto de `_limites`."""
     assert mapa._limites(mapa._geometrias(("DF",)))
+
+
+# ── Alvos pequenos ───────────────────────────────────────────────────────────
+
+def _camadas(ufs):
+    spec = json.loads(mapa.deck(_dados(ufs), TEMA).to_json())
+    return {c["@@type"]: c for c in spec["layers"]}
+
+
+def test_df_ganha_disco_no_mapa_do_brasil(todas_ufs):
+    """No enquadramento do país o DF mede ~9x5 px — acertá-lo com o ponteiro
+    é pontaria. O disco é o tratamento cartográfico usual para enclave
+    pequeno."""
+    disco = _camadas(todas_ufs)["ScatterplotLayer"]
+    assert [p["uf"] for p in disco["data"]] == ["DF"]
+
+
+def test_disco_some_quando_a_uf_ja_e_grande():
+    """O limite é o tamanho na tela, não a identidade da UF: com o DF
+    sozinho o recorte aproxima, ele fica grande e o disco perde a razão de
+    existir."""
+    assert "ScatterplotLayer" not in _camadas(["DF"])
+
+
+def test_disco_usa_a_cor_da_classe_da_uf(todas_ufs):
+    """O disco não pode inventar informação: é a mesma cor que o polígono."""
+    camadas = _camadas(todas_ufs)
+    disco = camadas["ScatterplotLayer"]["data"][0]
+    poligono = next(
+        f for f in camadas["GeoJsonLayer"]["data"]["features"]
+        if f["properties"]["uf"] == "DF"
+    )
+    assert disco["cor"] == poligono["properties"]["cor"]
+
+
+def test_raio_de_captura_declarado(todas_ufs):
+    """Ajuda nas bordas. Não resolve o DF — ver a constante."""
+    spec = json.loads(mapa.deck(_dados(todas_ufs), TEMA).to_json())
+    assert spec["pickingRadius"] == mapa.RAIO_CAPTURA
+
+
+def test_disco_nao_deixa_string_virar_acessor(todas_ufs):
+    """O pydeck converte string em acessor de dado (`"pixels"` -> `@@=pixels`).
+
+    Quando isso acontece o deck procura um campo com aquele nome, não acha e
+    cai no padrão — foi como o disco do DF saiu do tamanho de meio Goiás. A
+    guarda é grosseira de propósito: nenhum acessor da camada de discos pode
+    apontar para um nome que não é campo dos dados.
+    """
+    spec = json.loads(mapa.deck(_dados(todas_ufs), TEMA).to_json())
+    disco = next(c for c in spec["layers"] if c["@@type"] == "ScatterplotLayer")
+    campos = set(disco["data"][0])
+    for chave, valor in disco.items():
+        if isinstance(valor, str) and valor.startswith("@@="):
+            nome = valor[3:].strip("[]")
+            for parte in nome.split(","):
+                assert parte.strip() in campos, f"{chave}={valor}"

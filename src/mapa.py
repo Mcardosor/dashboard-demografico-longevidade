@@ -75,6 +75,30 @@ SEM_DADO = "#E5E7EB"
 #: Os cortes vêm de `data.cortes_quartis()` e são **fixos** — ver lá o porquê.
 CLASSES = 4
 
+#: Raio de captura do ponteiro, em pixels.
+#:
+#: Ajuda nas bordas — litoral, divisas — onde o cursor cai um fio fora do
+#: polígono. **Não resolve o Distrito Federal**, e é bom registrar por quê:
+#: o deck.gl só procura dentro do raio quando não há nada sob o cursor, e o
+#: DF é cercado por Goiás. Medido: a 6 px do DF o tooltip mostra GO. Quem
+#: resolve o DF é o disco de `_camada_marcadores`.
+RAIO_CAPTURA = 8
+
+#: Diâmetro, em pixels, abaixo do qual uma UF ganha um disco por cima.
+#:
+#: No enquadramento do Brasil o DF mede cerca de 9 x 5 px: visível, mas
+#: acertá-lo com o mouse é exercício de pontaria. O disco é o tratamento
+#: cartográfico usual para enclave pequeno — mesma cor da classe, para não
+#: inventar informação, e alvo grande o bastante para o ponteiro.
+#:
+#: O limite é comparado ao tamanho **na tela**, então some sozinho quando o
+#: recorte aproxima: com o DF selecionado sozinho ele é grande e não ganha
+#: disco.
+LIMITE_DISCO_PX = 14
+
+#: Raio do disco, em pixels.
+RAIO_DISCO = 7
+
 #: Folha de estilo **vazia**, no formato do MapLibre/Mapbox GL: sem fontes e
 #: sem camadas. É o que garante que nenhum ladrilho seja pedido a ninguém.
 #:
@@ -330,6 +354,7 @@ def _compactar(mapa_deck: pydeck.Deck) -> None:
         # "mapbox", então o estilo vazio entra aqui, onde o spec final já é
         # nosso. Ver ESTILO_VAZIO para o porquê de ele ser necessário.
         spec["mapStyle"] = ESTILO_VAZIO
+        spec["pickingRadius"] = RAIO_CAPTURA
         compacto = json.dumps(spec, sort_keys=True, separators=(",", ":"))
     # Captura ampla de propósito: otimização não pode derrubar o mapa. E
     # `Exception`, nunca `BaseException` — `RerunException` herda desta última
@@ -338,6 +363,53 @@ def _compactar(mapa_deck: pydeck.Deck) -> None:
         return
 
     mapa_deck.to_json = lambda: compacto
+
+
+def _camada_marcadores(pydeck_mod, feicoes, quadro, t):
+    """Disco sobre as UFs pequenas demais para o ponteiro acertar.
+
+    Devolve `None` quando nenhuma UF do recorte é pequena — o caso comum
+    depois de filtrar poucos estados, em que tudo já está grande na tela.
+    """
+    px_por_grau = 2 ** quadro["zoom"] * 512 / 360
+    pequenas = []
+    for f in feicoes:
+        x0, y0, x1, y1 = _caixa(_partes([f["geometry"]]))
+        largura = (x1 - x0) * px_por_grau
+        altura = abs(_mercator(y1) - _mercator(y0)) * px_por_grau
+        if max(largura, altura) < LIMITE_DISCO_PX:
+            props = dict(f["properties"])
+            props["lon"] = (x0 + x1) / 2
+            props["lat"] = (y0 + y1) / 2
+            pequenas.append(props)
+
+    if not pequenas:
+        return None
+
+    return pydeck_mod.Layer(
+        "ScatterplotLayer",
+        data=pequenas,
+        get_position=["lon", "lat"],
+        get_fill_color="cor",
+        get_line_color=_rgb("#FFFFFF"),
+        line_width_min_pixels=1.5,
+        stroked=True,
+        # Raio preso em pixels **sem** passar a string "pixels".
+        #
+        # `radius_units="pixels"` parece o caminho e não é: o pydeck converte
+        # string em acessor de dado, vira `@@=pixels`, o deck procura um campo
+        # com esse nome, não acha e cai no padrão em metros — o disco saiu do
+        # tamanho de meio Goiás. É a mesma conversão que já custou o
+        # `size_units` do sinan.
+        #
+        # Piso e teto iguais fixam o tamanho na tela em qualquer zoom, e são
+        # números: não há string para o pydeck reinterpretar.
+        get_radius=1,
+        radius_min_pixels=RAIO_DISCO,
+        radius_max_pixels=RAIO_DISCO,
+        pickable=True,
+        auto_highlight=True,
+    )
 
 
 def deck(df_idosos: pd.DataFrame, t: dict) -> pydeck.Deck:
@@ -391,8 +463,13 @@ def deck(df_idosos: pd.DataFrame, t: dict) -> pydeck.Deck:
         "center": {"lat": -14.24, "lon": -51.93}, "zoom": 3.2,
     }
 
+    camadas = [camada]
+    marcadores = _camada_marcadores(pydeck, feicoes, quadro, t)
+    if marcadores is not None:
+        camadas.append(marcadores)
+
     mapa_deck = pydeck.Deck(
-        layers=[camada],
+        layers=camadas,
         initial_view_state=pydeck.ViewState(
             latitude=quadro["center"]["lat"],
             longitude=quadro["center"]["lon"],
