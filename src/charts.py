@@ -19,8 +19,19 @@ def processar_dados(df: pd.DataFrame):
             - `df_idosos`: uma linha por UF, com `total`, `idosos` (idade
               >= 60) e `pct_idosos`.
     """
-    bins   = list(range(0, 101, 5)) + [200]
-    labels = [f"{i}-{i+4}" for i in range(0, 100, 5)] + ["100+"]
+    # A última faixa é **80+**, e não 80-84 seguida de 85-89, 90-94, 95-99 e
+    # 100+.
+    #
+    # A base termina em 80, e essa idade não é "quem tem 80": é o balde aberto
+    # "80 anos ou mais", com 4,96 milhões de pessoas em 2025. Conferido contra
+    # a planilha de idade simples da revisão 2024 do IBGE.
+    #
+    # Com as faixas antigas a pirâmide desenhava esses 4,96 milhões dentro de
+    # "80-84" — 1,8x o valor real da faixa, que é 2,71 milhões — e deixava
+    # 85-89, 90-94, 95-99 e 100+ zeradas, dando a entender que ninguém no
+    # Brasil passa dos 85. Os rótulos afirmavam o que o dado não sustenta.
+    bins   = list(range(0, 81, 5)) + [200]
+    labels = [f"{i}-{i+4}" for i in range(0, 80, 5)] + ["80+"]
 
     df_proc = df.copy()
     df_proc["faixa_etaria"] = pd.cut(df_proc["idade"], bins=bins, labels=labels, right=False)
@@ -105,10 +116,11 @@ def fig_piramide(df: pd.DataFrame, t: dict) -> go.Figure:
     Returns:
         go.Figure: pirâmide etária com barras opostas.
     """
+    # Termina em "80+" porque a base termina ali — ver `processar_dados`.
     FAIXAS = [
         "0-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39",
         "40-44","45-49","50-54","55-59","60-64","65-69","70-74","75-79",
-        "80-84","85-89","90-94","95-99","100+",
+        "80+",
     ]
     agg = df.groupby(["faixa_etaria", "sexo"], observed=False)["populacao"].sum().reset_index()
     agg["faixa_etaria"] = agg["faixa_etaria"].astype(str)

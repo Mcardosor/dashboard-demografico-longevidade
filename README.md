@@ -40,6 +40,7 @@ O painel fala **"60+"**, não "idosos", em tudo que o leitor vê — ver
 |---|---|
 | [Arquitetura](docs/ARQUITETURA.md) | Fluxo de dados ponta a ponta, módulos, deploy e limitações — comece por aqui |
 | [Documentação dos Gráficos](docs/DOCUMENTACAO_GRAFICOS.md) | Por que cada gráfico existe, como é calculado e o código |
+| [Conferência dos dados](docs/conferencia-dados.md) | Os números batem com o IBGE? Sim — e o que a conferência revelou |
 | [Identidade visual](docs/identidade.md) | A paleta roxa do Observatório, de onde veio cada cor e o que reprovou na validação |
 | [Deploy na VM](docs/deploy-vm.md) | Bootstrap na `cenarios-vm`: portas, rota do nginx e a pegadinha do prefixo |
 | [Performance](docs/performance.md) | Linha de base medida, o que foi otimizado e os alvos presos em teste |

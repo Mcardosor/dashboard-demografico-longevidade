@@ -75,6 +75,12 @@ reconhecível do DF por um círculo — descaracterizava o mapa sem necessidade.
 
 ## 04 · Pirâmide etária
 
+**A última faixa é "80+", e não 100+.** A base termina num balde aberto aos 80
+anos, com 4,96 milhões de pessoas em 2025. Enquanto a pirâmide desenhava
+faixas até 100+, todo esse contingente caía em "80-84" — 1,8x o valor real —
+e as faixas acima ficavam zeradas, sugerindo que ninguém passa dos 85. Ver
+[Conferência dos dados](conferencia-dados.md).
+
 **Por quê:** visão clássica de demografia — a forma da pirâmide (base larga vs. topo largo) indica se a população está envelhecendo ou é predominantemente jovem.
 
 **Como é calculado:** `processar_dados()` cria faixas etárias de 5 em 5 anos (`0-4`, `5-9`, ..., `100+`). O gráfico plota homens como valores negativos e mulheres como positivos, convenção padrão de pirâmide etária, pra ficarem em lados opostos do eixo zero.
