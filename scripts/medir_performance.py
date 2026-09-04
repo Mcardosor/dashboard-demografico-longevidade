@@ -106,7 +106,7 @@ def main() -> None:
         cabecalho += f"{rotulo:>22}"
     print(cabecalho)
 
-    for nome in ("mapa.deck", "fig_pizza", "fig_piramide", "fig_ranking", "fig_evolucao"):
+    for nome in ("mapa.deck", "fig_pizza", "fig_piramide", "fig_evolucao"):
         linha = f"{nome:<{largura}}"
         for ufs in RECORTES.values():
             df_f = df_proc if ufs is None else df_proc[df_proc["uf"].isin(ufs)]
@@ -121,7 +121,6 @@ def main() -> None:
                 "mapa.deck": lambda d=df_i: mapa.deck(d, TEMA),
                 "fig_pizza": lambda d=df_f: charts.fig_pizza(d, TEMA),
                 "fig_piramide": lambda d=df_f: charts.fig_piramide(d, TEMA),
-                "fig_ranking": lambda d=df_i: charts.fig_ranking(d, TEMA),
                 "fig_evolucao": lambda u=ufs_ev: charts.fig_evolucao(df_evo, u, TEMA),
             }
             construir = construtores[nome]

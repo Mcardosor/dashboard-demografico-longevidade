@@ -183,10 +183,9 @@ def _css(t: dict) -> str:
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(0,0,0,.15);
   }}
-  .kpi-card.green  {{ border-top-color: {t['success']}; }}
-  .kpi-card.blue   {{ border-top-color: {t['accent']}; }}
-  .kpi-card.purple {{ border-top-color: #bc8cff; }}
-  .kpi-card.orange {{ border-top-color: #e3b341; }}
+  /* Uma cor só para os quatro cards. As variantes .blue/.orange/.purple/
+     .green saíram: davam matizes distintos a facetas do mesmo assunto, e
+     depois da troca de marca a classe `.blue` ainda pintava de roxo. */
 
   .kpi-header {{ display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }}
   .kpi-icon   {{ font-size: 1.5rem; }}

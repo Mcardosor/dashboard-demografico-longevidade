@@ -242,6 +242,16 @@ base do ano atual e do anterior, montar o mapa e os quatro gráficos.
 Os tetos têm folga de propósito. Prender o número medido faria o teste falhar
 por ruído de máquina; o que eles pegam é regressão de ordem de grandeza.
 
+## Nota sobre `fig_ranking`
+
+As tabelas acima ainda medem `fig_ranking`, que **não existe mais**: a seção
+de ranking saiu do painel em 04/set/2026 por mostrar a mesma métrica do mapa
+e da tabela de estados (ver
+[Documentação dos Gráficos](DOCUMENTACAO_GRAFICOS.md)). Os números ficam como
+registro da medição de então — reescrevê-los inventaria um passado que não
+foi medido. Na prática o painel hoje é mais barato do que estas tabelas
+indicam, por uma figura de ~30 ms.
+
 ## O que ainda não foi medido
 
 - Tempo percebido ponta a ponta, no navegador

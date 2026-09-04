@@ -83,7 +83,7 @@ def fig_pizza(df: pd.DataFrame, t: dict, apenas_idosos: bool = False) -> go.Figu
         ),
         margin=dict(l=20, r=20, t=20, b=20),
         annotations=[dict(
-            text=f"<b>{_fmt(total)}</b><br><span style='font-size:11px'>{('idosos' if apenas_idosos else 'pessoas')}</span>",
+            text=f"<b>{_fmt(total)}</b><br><span style='font-size:11px'>{('pessoas com 60+' if apenas_idosos else 'pessoas')}</span>",
             x=0.5, y=0.5, font=dict(size=18, color=t["text_title"]),
             showarrow=False, align="center",
         )],
@@ -147,39 +147,6 @@ def fig_piramide(df: pd.DataFrame, t: dict) -> go.Figure:
         yaxis=dict(title="", tickfont=dict(size=10, color=t["text"])),
         showlegend=False,
         margin=dict(l=10, r=20, t=30, b=40),
-    )
-    return fig
-
-
-def fig_ranking(df_idosos: pd.DataFrame, t: dict) -> go.Figure:
-    """Monta o ranking horizontal de estados por % de idosos.
-
-    Args:
-        df_idosos: uma linha por UF, com `pct_idosos` (ver `processar_dados`).
-        t: dicionário de tema (cores) atual.
-
-    Returns:
-        go.Figure: gráfico de barras horizontais, ordenado crescente (o
-            maior valor fica no topo, convenção do Plotly para barras `h`).
-    """
-    df_r = df_idosos.sort_values("pct_idosos", ascending=True)
-    fig = px.bar(
-        df_r, x="pct_idosos", y="uf", orientation="h",
-        color_discrete_sequence=[t["accent"]],
-        text="pct_idosos", labels={"pct_idosos": "% Idosos", "uf": "Estado"},
-    )
-    _apply_layout(fig, t, max(300, len(df_r) * 22))
-    fig.update_layout(
-
-        margin=dict(l=10, r=80, t=20, b=10),
-        xaxis=dict(title=dict(text="Proporção de idosos (%)", font=dict(color=t["text"])), tickfont=dict(color=t["text_muted"])),
-        yaxis=dict(title="", tickfont=dict(color=t["text"])),
-    )
-    fig.update_traces(
-        texttemplate="%{text:.2f}%", textposition="outside",
-        cliponaxis=False,
-        marker_line_color=t["bar_line"], marker_line_width=1,
-        hovertemplate="<b>%{y}</b><br>% Idosos: %{x:.2f}%<extra></extra>",
     )
     return fig
 

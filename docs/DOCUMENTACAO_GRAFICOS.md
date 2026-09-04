@@ -1,4 +1,4 @@
-# Documentação dos Gráficos — Dashboard Demográfico
+# Documentação dos Gráficos — Envelhecimento Populacional
 
 Por que cada gráfico existe, como é calculado e onde está o código.
 
@@ -50,14 +50,37 @@ Por que cada gráfico existe, como é calculado e onde está o código.
 
 **Código:** `src/charts.py::fig_evolucao()`
 
-## 06 · Ranking — Proporção de Idosos por Estado
-
-**Por quê:** mesmo dado do mapa e do Top 15, mas em formato de barra horizontal completo (todos os estados, não só os 15 primeiros) — útil para comparar a distribuição inteira, não só os extremos.
-
-**Como é calculado:** mesma base `df_idosos` do mapa, ordenada ascendente (Plotly desenha barras horizontais de baixo pra cima, então ascendente deixa o maior valor no topo visualmente).
-
-**Código:** `src/charts.py::fig_ranking()`
-
 ## KPIs do topo
 
 Os 4 cards (População total, Proporção de idosos, Proporção feminina, Idade média) são calculados em `app.py` sobre `df_filt` (já filtrado pelas UFs selecionadas), com comparação automática ao ano anterior via `src/utils.py::_delta_html()`. Se não houver ano anterior disponível na base, a variação não é exibida.
+
+## Por que não há um ranking de estados
+
+Havia, na seção 06: um gráfico de barras com a proporção de 60+ por UF,
+ordenado. Saiu porque mostrava **o mesmo número** do mapa (01) e da tabela
+(02) — a mesma métrica em três formas, na mesma página.
+
+A tabela ficou porque é a que complementa o mapa: o mapa dá o padrão
+geográfico e não dá valor exato; a tabela dá o valor exato e não dá o padrão.
+O ranking em barras não acrescentava um terceiro ângulo, só repetia o
+segundo.
+
+O sintoma era a redação: os três títulos precisavam dizer "proporção de
+idosos por estado" de jeitos ligeiramente diferentes para não parecerem
+duplicados. Quando o texto se contorce assim, em geral o problema é o
+conteúdo, não a palavra.
+
+## Vocabulário
+
+O painel diz **"60+"** e **"pessoas com 60 anos ou mais"**, não "idosos", em
+tudo que o leitor vê: títulos, cards, legenda do mapa, cabeçalho da tabela e
+tooltips.
+
+Não é preciosismo — é consistência. Durante um tempo o painel usou os dois:
+os títulos falavam em "60+" e a legenda do mapa em "% Idosos". Vocabulário
+misturado faz o leitor parar para conferir se são a mesma métrica, e isso
+custa mais atenção do que a palavra economiza.
+
+Nos nomes internos (colunas `pct_idosos`, `df_idosos`) o termo permanece —
+ali ele não é lido por ninguém de fora e trocá-lo mexeria em toda a camada de
+dados sem ganho.

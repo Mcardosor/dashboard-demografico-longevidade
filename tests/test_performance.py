@@ -69,7 +69,6 @@ def test_interacao_completa_sob_o_orcamento(base):
         mapa.deck(df_idosos, TEMA)
         charts.fig_pizza(df_proc, TEMA)
         charts.fig_piramide(df_proc, TEMA)
-        charts.fig_ranking(df_idosos, TEMA)
         charts.fig_evolucao(df_evo, ufs, TEMA)
 
     ms = _mediana_ms(interacao)

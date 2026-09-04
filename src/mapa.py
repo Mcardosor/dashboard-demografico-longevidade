@@ -392,8 +392,8 @@ def deck(df_idosos: pd.DataFrame, t: dict) -> pydeck.Deck:
         map_style=None,
         tooltip={
             "html": (
-                "<b>{uf}</b><br>% Idosos: {pct}<br>"
-                "Idosos: {idosos}<br>Total: {total}"
+                "<b>{uf}</b><br>% com 60+: {pct}<br>"
+                "Pessoas 60+: {idosos}<br>População: {total}"
             ),
             "style": {
                 "backgroundColor": "rgba(17,24,39,.96)",
@@ -422,7 +422,7 @@ def legenda(df_idosos: pd.DataFrame, t: dict) -> str:
     return f"""
     <div style="display:flex;align-items:center;gap:10px;margin-top:8px;
                 font-size:.78rem;color:{t['text_muted']}">
-      <span>% Idosos</span>
+      <span>% com 60+</span>
       <span>{minimo:.1f}%</span>
       <div style="flex:1;height:10px;border-radius:5px;
                   border:1px solid {t['border']};

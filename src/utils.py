@@ -57,7 +57,7 @@ def _delta_html(val: float, prev: float, invert: bool = False) -> str:
 
 
 def kpi_card(title: str, value: str, subtitle: str, icon: str,
-             delta_html: str = "", color: str = "blue") -> str:
+             delta_html: str = "") -> str:
     """Monta o HTML de um card de KPI (título, valor, subtítulo e variação).
 
     Args:
@@ -67,13 +67,18 @@ def kpi_card(title: str, value: str, subtitle: str, icon: str,
         icon: emoji exibido no canto do card.
         delta_html: HTML da variação vs. período anterior (ver `_delta_html`),
             omitido do card se vazio.
-        color: nome da cor de destaque (classe CSS `.kpi-card.{color}`).
+
+    Todos os cards usam a mesma cor de marca. Havia um parâmetro `color` que
+    dava a cada um um matiz diferente — azul, laranja, roxo, verde — sem que
+    a cor codificasse coisa alguma. Os quatro KPIs são facetas do mesmo
+    assunto; pintá-los de cores distintas convida o leitor a procurar um
+    significado que não existe.
 
     Returns:
         str: HTML pronto para `unsafe_allow_html`.
     """
     return f"""
-    <div class="kpi-card {color}">
+    <div class="kpi-card">
       <div class="kpi-header">
         <div class="kpi-title">{title}</div>
         <div class="kpi-icon">{icon}</div>
@@ -105,11 +110,11 @@ def section_header(num: str, title: str, caption: str = "") -> str:
 
 
 def html_top5(df, t: dict) -> str:
-    """Monta a tabela HTML do ranking Top 5/15 de estados por % de idosos.
+    """Monta a tabela HTML dos estados com maior proporção de pessoas 60+.
 
     Args:
         df: DataFrame já ordenado e formatado, com colunas `UF`,
-            `% Idosos` e `Idosos` (strings prontas para exibição).
+            `% 60+` e `Pessoas 60+` (strings prontas para exibição).
         t: dicionário de tema (cores) atual, ver `src.themes.THEMES`.
 
     Returns:
@@ -122,8 +127,8 @@ def html_top5(df, t: dict) -> str:
         <tr style="border-bottom:1px solid {t['border']}">
           <td style="padding:8px 10px;color:{t['text_muted']};font-size:.8rem">{medals[i]}</td>
           <td style="padding:8px 10px;font-weight:700;color:{t['accent']}">{row['UF']}</td>
-          <td style="padding:8px 10px;text-align:right;font-weight:600;color:{t['text_title']}">{row['% Idosos']}</td>
-          <td style="padding:8px 10px;text-align:right;color:{t['text_muted']};font-size:.8rem">{row['Idosos']}</td>
+          <td style="padding:8px 10px;text-align:right;font-weight:600;color:{t['text_title']}">{row['% 60+']}</td>
+          <td style="padding:8px 10px;text-align:right;color:{t['text_muted']};font-size:.8rem">{row['Pessoas 60+']}</td>
         </tr>"""
     return f"""
     <table style="width:100%;border-collapse:collapse;font-size:.85rem;
@@ -133,8 +138,8 @@ def html_top5(df, t: dict) -> str:
         <tr style="background:{t['bg']};border-bottom:2px solid {t['border']}">
           <th style="padding:8px 10px;text-align:left;color:{t['text_muted']};font-size:.72rem;text-transform:uppercase;letter-spacing:.05em">#</th>
           <th style="padding:8px 10px;text-align:left;color:{t['text_muted']};font-size:.72rem;text-transform:uppercase;letter-spacing:.05em">UF</th>
-          <th style="padding:8px 10px;text-align:right;color:{t['text_muted']};font-size:.72rem;text-transform:uppercase;letter-spacing:.05em">% Idosos</th>
-          <th style="padding:8px 10px;text-align:right;color:{t['text_muted']};font-size:.72rem;text-transform:uppercase;letter-spacing:.05em">Total Idosos</th>
+          <th style="padding:8px 10px;text-align:right;color:{t['text_muted']};font-size:.72rem;text-transform:uppercase;letter-spacing:.05em">% 60+</th>
+          <th style="padding:8px 10px;text-align:right;color:{t['text_muted']};font-size:.72rem;text-transform:uppercase;letter-spacing:.05em">Pessoas 60+</th>
         </tr>
       </thead>
       <tbody>{rows}</tbody>
