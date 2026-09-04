@@ -46,9 +46,16 @@ O painel fala **"60+"**, não "idosos", em tudo que o leitor vê — ver
 
 ## Filtros
 
-- Ano de referência — atualiza KPIs e gráficos, com comparativo automático ao ano anterior
-- Seleção de estados — individual ou por região (Norte, Nordeste, Centro-Oeste, Sudeste, Sul)
-- Toggle "apenas ≥ 60 anos" no gráfico de distribuição por sexo
+Ficam **numa linha, logo abaixo do título** — não numa barra lateral. São dois
+seletores:
+
+- **Ano de referência** — atualiza KPIs e gráficos, com comparativo automático
+  ao ano anterior
+- **Recorte** — todos os estados, uma região (Norte, Nordeste, Centro-Oeste,
+  Sudeste, Sul) ou estados escolhidos a dedo
+
+Mais o toggle "Apenas ≥ 60 anos" dentro do gráfico de distribuição por sexo,
+que é onde ele age.
 
 ## Stack
 
@@ -139,7 +146,7 @@ Projeções de População do IBGE (2010–2025), por município, faixa etária 
 
 ```
 dashboard-demografico/
-├── app.py                  # entrada principal — sidebar, filtros, layout
+├── app.py                  # entrada principal — filtros, layout
 ├── src/
 │   ├── charts.py           # figuras Plotly
 │   ├── data.py              # carregamento e cache

@@ -24,7 +24,7 @@ st.set_page_config(
     page_title="Envelhecimento Populacional | Longevidade",
     page_icon="🗺️",
     layout="wide",
-    initial_sidebar_state="expanded",
+    # Sem barra lateral: os filtros vivem numa linha no corpo da página.
 )
 
 
@@ -66,76 +66,6 @@ _ano_default = st.session_state.get("ano_sel", _anos[0])
 _df_default  = carregar_dados(_ano_default)
 _ufs_disp    = sorted(_df_default["uf"].unique().tolist())
 
-# ── Callbacks ────────────────────────────────────────────────────────────────
-def _on_regiao_change():
-    """Callback do selectbox de região — preenche o multiselect de UFs.
-
-    Disparado quando o usuário escolhe uma região; substitui a seleção
-    atual do multiselect (`ms_ufs`) pelas UFs daquela região.
-    """
-    regiao = st.session_state.get("sel_regiao", "— nenhum —")
-    st.session_state["ms_ufs"] = (
-        [u for u in REGIOES.get(regiao, []) if u in _ufs_disp]
-        if regiao != "— nenhum —" else []
-    )
-
-def _on_todos_change():
-    """Callback do checkbox "Todos os estados" — limpa a seleção ao desmarcar.
-
-    Ao desmarcar, esvazia o multiselect de UFs para o usuário escolher um
-    subconjunto explicitamente (em vez de manter a seleção anterior).
-    """
-    if not st.session_state.get("chk_todos", True):
-        st.session_state["ms_ufs"] = []
-
-# ── Sidebar ───────────────────────────────────────────────────────────────────
-with st.sidebar:
-    st.divider()
-
-    ano_sel = st.selectbox("📅 Ano de referência", options=_anos, index=0, key="ano_sel")
-    ano_ant = _anos[_anos.index(ano_sel) + 1] if _anos.index(ano_sel) + 1 < len(_anos) else None
-
-    st.divider()
-    st.markdown("**🗺️ Estados**")
-
-    todos = st.checkbox("Todos os estados", value=True, key="chk_todos", on_change=_on_todos_change)
-
-    if not todos:
-        regiao_atual = st.session_state.get("sel_regiao", "— nenhum —")
-        st.selectbox(
-            "Filtrar por região:",
-            options=["— nenhum —"] + list(REGIOES.keys()),
-            key="sel_regiao",
-            on_change=_on_regiao_change,
-        )
-        regiao_atual = st.session_state.get("sel_regiao", "— nenhum —")
-
-        if regiao_atual != "— nenhum —":
-            _ufs_regiao = [u for u in REGIOES.get(regiao_atual, []) if u in _ufs_disp]
-            st.markdown(
-                # Cor do tema, e não hexadecimal solto: era #58a6ff fixo, que
-                # sobrevivia à troca de marca e ao tema escuro.
-                f"<div style='background:{t['accent']}1a;border:1px solid {t['accent']}4d;"
-                f"border-radius:8px;padding:8px 12px;font-size:.82rem;color:{t['accent']};margin-top:4px'>"
-                f"📍 <b>{regiao_atual}</b> · {len(_ufs_regiao)} estados</div>",
-                unsafe_allow_html=True,
-            )
-            ufs_sel = _ufs_regiao
-        else:
-            ufs_sel = st.multiselect(
-                "Estados:",
-                options=_ufs_disp,
-                key="ms_ufs",
-                placeholder="Selecione estados...",
-            )
-            if not ufs_sel:
-                ufs_sel = _ufs_disp
-    else:
-        ufs_sel = _ufs_disp
-
-    st.divider()
-    filtrar_idosos_pizza = False  # definido abaixo no card
-
 # ── Tema ──────────────────────────────────────────────────────────────────────
 st.markdown(_css(t), unsafe_allow_html=True)
 
@@ -166,6 +96,51 @@ if st.session_state.theme == "light":
         unsafe_allow_html=True,
     )
 
+# ── Filtros ──────────────────────────────────────────────────────────────────
+# Numa linha, logo abaixo do título e acima do que eles mudam.
+#
+# Eram três controles numa barra lateral: um checkbox "Todos os estados", um
+# seletor de região que só aparecia ao desmarcá-lo, e um multiselect que só
+# aparecia se a região fosse "nenhum". Três controles encadeados para uma
+# escolha só, escondidos num painel que o leitor precisava abrir — e que
+# roubava um quinto da largura do painel.
+#
+# Aqui a escolha do recorte é **um** seletor: todos, uma região, ou estados a
+# dedo. O multiselect só aparece na última opção.
+RECORTE_TODOS = "Todos os estados"
+RECORTE_ESCOLHER = "Escolher estados…"
+
+_hero = st.container()  # reservado: o título vai acima dos filtros, mas
+                        # precisa dos valores que eles produzem
+
+col_ano, col_recorte, col_estados = st.columns([1, 1.2, 2.4], gap="medium")
+
+with col_ano:
+    ano_sel = st.selectbox("Ano de referência", options=_anos, index=0, key="ano_sel")
+    ano_ant = _anos[_anos.index(ano_sel) + 1] if _anos.index(ano_sel) + 1 < len(_anos) else None
+
+with col_recorte:
+    recorte = st.selectbox(
+        "Recorte",
+        options=[RECORTE_TODOS, *REGIOES, RECORTE_ESCOLHER],
+        key="sel_recorte",
+    )
+
+with col_estados:
+    if recorte == RECORTE_ESCOLHER:
+        ufs_sel = st.multiselect(
+            "Estados", options=_ufs_disp, key="ms_ufs",
+            placeholder="Nenhum escolhido mostra todos",
+        ) or _ufs_disp
+    elif recorte == RECORTE_TODOS:
+        ufs_sel = _ufs_disp
+        st.markdown("<div style='height:1.8rem'></div>", unsafe_allow_html=True)
+        st.caption(f"{len(ufs_sel)} estados, o país inteiro.")
+    else:
+        ufs_sel = [u for u in REGIOES[recorte] if u in _ufs_disp]
+        st.markdown("<div style='height:1.8rem'></div>", unsafe_allow_html=True)
+        st.caption(f"{recorte}: {', '.join(ufs_sel)}.")
+
 # ── Dados ─────────────────────────────────────────────────────────────────────
 df_raw             = carregar_dados(ano_sel)
 df_proc, df_idosos = processar_dados(df_raw)
@@ -176,9 +151,6 @@ df_proc_ant, df_idosos_ant = processar_dados(df_ant) if df_ant is not None else 
 
 pop_total = int(df_proc["populacao"].sum())
 n_ufs     = df_proc["uf"].nunique()
-
-with st.sidebar:
-    st.caption(f"📊 **{_fmt(pop_total)}** hab. · **{len(ufs_sel)}** de {n_ufs} estados · IBGE {ano_sel}")
 
 # ── Métricas filtradas ────────────────────────────────────────────────────────
 df_filt    = df_proc[df_proc["uf"].isin(ufs_sel)]
@@ -220,7 +192,7 @@ _label_ufs = (
     else f"{len(ufs_sel)} estado{'s' if len(ufs_sel) > 1 else ''} selecionado{'s' if len(ufs_sel) > 1 else ''}"
 )
 
-st.markdown(f"""
+_hero.markdown(f"""
 <div class="hero">
   <h1 class="hero-title">Envelhecimento Populacional no Brasil</h1>
   <p class="hero-subtitle">

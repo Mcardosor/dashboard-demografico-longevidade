@@ -24,7 +24,7 @@ src/charts.py::processar_dados() ──► deriva faixa etária + recorte 60+ po
         │                         cortes de src/data.py::cortes_quartis())
         │
         ▼
-app.py ──► monta sidebar/filtros, chama src/charts.py::fig_*() para cada gráfico,
+app.py ──► monta a linha de filtros, chama src/charts.py::fig_*() para cada gráfico,
            src/utils.py para HTML de KPIs/tabelas, src/themes.py para CSS e marca
         │
         ▼
@@ -37,7 +37,7 @@ Streamlit renderiza no navegador
 
 | Arquivo | Responsabilidade |
 |---|---|
-| `app.py` | Entrada Streamlit — sidebar, filtros, layout, orquestra os módulos abaixo |
+| `app.py` | Entrada Streamlit — filtros, layout, orquestra os módulos abaixo |
 | `src/data.py` | Carregamento e cache dos Parquet (única camada que toca disco) |
 | `src/charts.py` | Processamento (`processar_dados`) e as três figuras Plotly (rosca, pirâmide, linha) |
 | `src/mapa.py` | O coroplético, em pydeck/deck.gl e sem basemap — ver [Performance](performance.md) |
@@ -51,7 +51,16 @@ Não há camada de API nem banco de dados — tudo roda no processo do Streamlit
 
 ## Ambiente e variáveis
 
-Nenhuma variável de ambiente é necessária — não há credenciais, banco ou serviço externo. `.streamlit/config.toml` fixa `baseUrlPath = "cenarios/demografico-longevidade"` (precisa bater com a rota do proxy reverso em produção).
+Nenhuma variável de ambiente é necessária — não há credenciais, banco ou serviço externo. `.streamlit/config.toml` fixa `baseUrlPath = "cenarios/demografico-longevidade"`
+(precisa bater com a rota do proxy reverso em produção) e o **tema nativo** do
+Streamlit — a moldura que ele desenha em volta do app.
+
+São dois temas, e é fácil esquecer o segundo: o do conteúdo mora em
+`src/themes.py`, e o dos widgets e do cabeçalho mora aqui. A troca de marca
+mexeu só no primeiro, e por um tempo o painel teve faixa escura no topo e
+checkbox azul do Cenários na lateral.
+
+Não há barra lateral: os filtros vivem numa linha no corpo da página.
 
 ## Deploy
 

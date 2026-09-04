@@ -8,10 +8,20 @@ baseUrlPath = "cenarios/demografico-longevidade"
 [client]
 toolbarMode = "viewer"
 
+# O tema NATIVO do Streamlit — a moldura que ele desenha em volta do app:
+# cabeçalho, barra lateral e os widgets. O tema do conteúdo é outro, mora em
+# `src/themes.py`, e os dois precisam combinar.
+#
+# Estava em `base = "dark"` com o azul do Cenários. O resultado era um painel
+# claro com uma faixa escura em cima e um checkbox azul na barra lateral —
+# restos da identidade antiga que a troca de marca não alcançou, porque ela
+# mexeu no CSS e não aqui.
 [theme]
-base = "dark"
-backgroundColor = "#0d1117"
-secondaryBackgroundColor = "#161b22"
-textColor = "#c9d1d9"
-primaryColor = "#58a6ff"
+base = "light"
+backgroundColor = "#f6f8fa"
+secondaryBackgroundColor = "#ffffff"
+textColor = "#24292f"
+# O roxo da marca (`themes.ROXO_MARCA`). É o que pinta checkbox, seleção e
+# foco dos widgets nativos, que o CSS do painel não alcança.
+primaryColor = "#6B2F96"
 font = "sans serif"
