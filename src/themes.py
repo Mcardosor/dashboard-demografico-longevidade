@@ -137,7 +137,9 @@ def _css(t: dict) -> str:
   }}
   .hero::before {{
     content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-    background: linear-gradient(90deg, #E07B54 0%, #2B7BB9 50%, #1a7f37 100%);
+    /* Fita da marca: magenta da flor -> roxo primário -> roxo escuro. Era o
+       terracota/azul/verde do Cenários. */
+    background: linear-gradient(90deg, #AA2DA3 0%, #6B2F96 50%, #3D1A5C 100%);
   }}
   .hero-title {{
     font-size: 2.1rem; font-weight: 800; color: {t['text_title']};

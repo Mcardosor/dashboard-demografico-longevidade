@@ -49,6 +49,11 @@ _iniciar_warmup()
 if "theme" not in st.session_state:
     st.session_state.theme = "light"
 
+# O dicionário do tema é resolvido **antes** da sidebar, que também pinta
+# widget com a cor da marca. O CSS global continua sendo injetado mais abaixo,
+# depois dos filtros, porque a ordem de injeção importa para o Streamlit.
+t = THEMES[st.session_state.theme]
+
 carregar_geojson()  # aquece o cache da malha antes do primeiro render
 _anos   = anos_disponiveis()
 
@@ -105,8 +110,10 @@ with st.sidebar:
         if regiao_atual != "— nenhum —":
             _ufs_regiao = [u for u in REGIOES.get(regiao_atual, []) if u in _ufs_disp]
             st.markdown(
-                f"<div style='background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.3);"
-                f"border-radius:8px;padding:8px 12px;font-size:.82rem;color:#58a6ff;margin-top:4px'>"
+                # Cor do tema, e não hexadecimal solto: era #58a6ff fixo, que
+                # sobrevivia à troca de marca e ao tema escuro.
+                f"<div style='background:{t['accent']}1a;border:1px solid {t['accent']}4d;"
+                f"border-radius:8px;padding:8px 12px;font-size:.82rem;color:{t['accent']};margin-top:4px'>"
                 f"📍 <b>{regiao_atual}</b> · {len(_ufs_regiao)} estados</div>",
                 unsafe_allow_html=True,
             )
@@ -127,7 +134,6 @@ with st.sidebar:
     filtrar_idosos_pizza = False  # definido abaixo no card
 
 # ── Tema ──────────────────────────────────────────────────────────────────────
-t = THEMES[st.session_state.theme]
 st.markdown(_css(t), unsafe_allow_html=True)
 
 st.markdown("<style>iframe[height='50']{display:none!important;margin:0;padding:0;height:0!important}</style>", unsafe_allow_html=True)
