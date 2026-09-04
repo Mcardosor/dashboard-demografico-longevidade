@@ -12,3 +12,4 @@ venv/
 # os
 .DS_Store
 Thumbs.db
+docs/_preview_raw.png

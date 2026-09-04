@@ -91,11 +91,32 @@ Não há barra lateral: os filtros vivem numa linha no corpo da página.
 antiga até alguém abrir o README. Com o painel rodando local:
 
 ```bash
-chrome --headless=new --disable-gpu --hide-scrollbars   --window-size=1440,1100 --virtual-time-budget=45000   --screenshot=docs/preview.png   http://localhost:8508/cenarios/demografico-longevidade/
+chrome --headless=new --disable-gpu --hide-scrollbars --window-size=1440,1600 --virtual-time-budget=90000 --screenshot=docs/_preview_raw.png http://localhost:8508/cenarios/demografico-longevidade/
 ```
 
-O `--virtual-time-budget` é o que importa: sem ele o print sai na tela de
-carregamento, porque o Streamlit ainda está lendo os parquets.
+```bash
+python -c "from PIL import Image; Image.open('docs/_preview_raw.png').crop((0,52,1440,1540)).save('docs/preview.png', optimize=True)"
+```
+
+**O corte não é firula.** Os 52px de cima são a faixa do cabeçalho do
+Streamlit, onde moram o botão de tema e o menu ⋮ — cromo de navegador, que num
+print de README só ocupa espaço e faz o painel parecer começar com um vazio.
+Cortando ali, a barra roxa da marca vira a primeira linha da imagem.
+
+Embaixo, 1540 é logo depois do divisor que fecha a seção do mapa. Terminar num
+divisor é o que evita a imagem cortada no meio de um gráfico. Os divisores
+ficam em **739 · 1532 · 2411 · 3005** com a janela em 1440 de largura —
+escolha outro se quiser um print mais curto ou mais longo.
+
+**Confira o arquivo antes de commitar.** Duas armadilhas:
+
+- **O `--virtual-time-budget` pode acabar antes do app renderizar**, e o print
+  sai na tela de carregamento — e **escura**, porque o esqueleto pré-boot do
+  Streamlit segue o `prefers-color-scheme` do sistema, que no headless é
+  dark. Um print escuro não é o tema escuro do painel: é um print vazio. Se
+  acontecer, aumente o orçamento.
+- **Um arquivo pequeno demais entrega isso sem precisar abrir**: o print bom
+  tem ~250 KB; a tela de carregamento, ~12 KB.
 
 ## Testes
 
