@@ -3,10 +3,14 @@
 # O que faltava eram as transitivas (altair, numpy, protobuf, pillow…), que o
 # pip resolvia livremente a cada build — é o que requirements.lock.txt fixa.
 # O Dockerfile instala do lock, não daqui.
-streamlit==1.45.1
-pandas==2.2.2
+streamlit==1.63.0
 plotly==6.3.1
-pyarrow==16.1.0
+
+# 2.2.3, e não 2.2.2: foi a versão que passou a publicar wheels cp313. O
+# `pandas==2.2.2` era o que obrigava a usar Docker para desenvolver em
+# máquina com Python 3.13 — não havia wheel e o build da fonte falhava.
+pandas==2.2.3
+pyarrow==25.0.1
 
 # O mapa. Já vinha no lock como transitiva do streamlit; virou direta quando o
 # coroplético saiu do Plotly (ver src/mapa.py e docs/performance.md).
