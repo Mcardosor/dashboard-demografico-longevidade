@@ -2,7 +2,7 @@
 
 Por que cada gráfico existe, como é calculado e onde está o código.
 
-## 01 · Mapa de Proporção de Idosos por Estado
+## 01 · Onde estão os 60+
 
 **Por quê:** primeira leitura visual do envelhecimento populacional — onde a proporção de idosos é mais alta no Brasil.
 
@@ -57,7 +57,7 @@ reconhecível do DF por um círculo — descaracterizava o mapa sem necessidade.
 
 **Sem fallback.** O anterior existia porque o Mapbox podia falhar — dependia de um terceiro pela rede. Sem ladrilho não há essa falha, e manter uma segunda rota de mapa em Plotly significaria manter código morto que ninguém exercita.
 
-## 02 · Top estados — % de idosos
+## 02 · Estados mais envelhecidos
 
 **Por quê:** o mapa mostra o padrão geográfico, mas não é fácil ler os valores exatos — essa tabela complementa com o ranking preciso.
 
@@ -65,7 +65,7 @@ reconhecível do DF por um círculo — descaracterizava o mapa sem necessidade.
 
 **Código:** `src/utils.py::html_top5()` monta o HTML da tabela; a ordenação acontece em `app.py`.
 
-## 03 · Distribuição por Sexo
+## 03 · Homens e mulheres
 
 **Por quê:** proporção de homens e mulheres na população total (ou só entre os idosos, via toggle).
 
@@ -73,7 +73,7 @@ reconhecível do DF por um círculo — descaracterizava o mapa sem necessidade.
 
 **Código:** `src/charts.py::fig_pizza()`
 
-## 04 · Pirâmide Etária
+## 04 · Pirâmide etária
 
 **Por quê:** visão clássica de demografia — a forma da pirâmide (base larga vs. topo largo) indica se a população está envelhecendo ou é predominantemente jovem.
 
@@ -81,7 +81,7 @@ reconhecível do DF por um círculo — descaracterizava o mapa sem necessidade.
 
 **Código:** `src/charts.py::fig_piramide()`
 
-## 05 · Evolução Populacional (2010-2025)
+## 05 · Evolução populacional (2010–2025)
 
 **Por quê:** tendência histórica da população total dos estados selecionados, complementando o retrato de um único ano dado pelos outros gráficos.
 
@@ -91,7 +91,40 @@ reconhecível do DF por um círculo — descaracterizava o mapa sem necessidade.
 
 ## KPIs do topo
 
-Os 4 cards (População total, Proporção de idosos, Proporção feminina, Idade média) são calculados em `app.py` sobre `df_filt` (já filtrado pelas UFs selecionadas), com comparação automática ao ano anterior via `src/utils.py::_delta_html()`. Se não houver ano anterior disponível na base, a variação não é exibida.
+Os quatro cards são calculados em `app.py::_indicadores()` sobre as UFs
+selecionadas, com comparação automática ao ano anterior via
+`src/utils.py::_delta_html()`. Sem ano anterior na base, a variação não
+aparece.
+
+| Card | O que é |
+|---|---|
+| **Pessoas com 60+** | Contagem absoluta; o total do país vai no subtítulo, como denominador |
+| **Proporção de 60+** | A mesma contagem sobre a população total |
+| **Índice de envelhecimento** | Pessoas de 60+ para cada 100 crianças de 0 a 14 anos |
+| **Idade média** | Média ponderada pela população de cada idade |
+
+### Dois cards que saíram, e por quê
+
+**"Proporção feminina"** mostrava 51,2% de mulheres na população total. Dois
+problemas: não fala de envelhecimento — é fato demográfico geral — e é
+estruturalmente imóvel. Medido: 51,09% em 2010 contra 51,25% em 2025, 0,16
+ponto em quinze anos. O "▲ 0,0% vs ano anterior" que aparecia não era do ano,
+era do indicador. Um card que nunca se move ocupa um quarto da faixa mais
+visível do painel para não informar nada.
+
+Entrou no lugar o índice de envelhecimento, que foi de 43 para 85 no mesmo
+período — dobrou.
+
+**"População total"** virou subtítulo do primeiro card. O painel é sobre a
+população de 60+; ela merece a primeira posição, e o total do país serve
+melhor como denominador do que como indicador próprio.
+
+### Uma cor só
+
+Os quatro cards usam o roxo da marca. Antes cada um tinha um matiz distinto
+(azul, laranja, roxo, verde) que não codificava nada — cor decorativa, que o
+olho tenta interpretar sem encontrar significado. E depois da troca de marca a
+classe chamada `.blue` ainda pintava de roxo.
 
 ## Por que não há um ranking de estados
 

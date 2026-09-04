@@ -1,4 +1,4 @@
-# Arquitetura — Dashboard Demográfico
+# Arquitetura — Envelhecimento Populacional
 
 Visão de ponta a ponta pra quem for rodar, estender ou dar manutenção neste projeto sem ajuda direta de quem construiu.
 
@@ -18,11 +18,14 @@ data/ibge_ufs.parquet ──┘        (junta os 3 parquets, normaliza sexo/idad
 src/data.py (carregar_dados, carregar_evolucao, anos_disponiveis)
         │  cache via @st.cache_data / @st.cache_resource
         ▼
-src/charts.py::processar_dados() ──► deriva faixa etária + recorte de idosos por UF
+src/charts.py::processar_dados() ──► deriva faixa etária + recorte 60+ por UF
+        │
+        ├─► src/mapa.py::deck()  (coroplético em pydeck, classes por quartil;
+        │                         cortes de src/data.py::cortes_quartis())
         │
         ▼
 app.py ──► monta sidebar/filtros, chama src/charts.py::fig_*() para cada gráfico,
-           src/utils.py para HTML de KPIs/tabelas, src/themes.py para CSS e dark mode
+           src/utils.py para HTML de KPIs/tabelas, src/themes.py para CSS e marca
         │
         ▼
 Streamlit renderiza no navegador
@@ -36,10 +39,13 @@ Streamlit renderiza no navegador
 |---|---|
 | `app.py` | Entrada Streamlit — sidebar, filtros, layout, orquestra os módulos abaixo |
 | `src/data.py` | Carregamento e cache dos Parquet (única camada que toca disco) |
-| `src/charts.py` | Processamento (`processar_dados`) e construção das figuras Plotly |
+| `src/charts.py` | Processamento (`processar_dados`) e as três figuras Plotly (rosca, pirâmide, linha) |
 | `src/mapa.py` | O coroplético, em pydeck/deck.gl e sem basemap — ver [Performance](performance.md) |
 | `src/utils.py` | Formatação de números, HTML de KPI cards/tabelas, layout comum dos gráficos |
-| `src/themes.py` | Paleta de cores light/dark, CSS global, toggle de tema via JS |
+| `src/themes.py` | Paleta light/dark, CSS global, wordmark da marca, toggle de tema e trava da roda do mouse |
+| `scripts/preparar_geometria.py` | Build: simplifica a malha das UFs uma vez, para `data/ufs.geojson` |
+| `scripts/medir_performance.py` | Mede tempo e payload de cada figura, sem o cache do Streamlit |
+| `tests/` | 66 testes: malha, mapa, identidade visual e orçamento de tempo |
 
 Não há camada de API nem banco de dados — tudo roda no processo do Streamlit, lendo Parquet do disco local.
 
@@ -59,5 +65,39 @@ Nenhuma variável de ambiente é necessária — não há credenciais, banco ou 
 ## Limitações conhecidas
 
 - Pipeline de dados brutos (IBGE → Parquet) não versionado neste repo (ver seção Fluxo de dados acima).
-- Sem testes automatizados.
 - Cobertura de dados: 2010–2025, por UF (não há recorte municipal na visualização, embora `ibge_municipios.parquet` exista na base).
+- **O tema escuro não recolore os gráficos.** O botão de tema apenas marca
+  `data-theme="dark"` no `<html>` e injeta uma folha de CSS por cima; o
+  `st.session_state.theme` nunca muda, então `THEMES["dark"]` não chega ao
+  Python. O entorno escurece, mas mapa, rosca e pirâmide seguem com as cores
+  do tema claro. Vem de antes deste painel e vale também para o
+  `dashboard-demografico`.
+- **O wordmark é reprodução.** A flor e o arranjo são fiéis; a tipografia do
+  JPEG oficial não é reproduzível com fonte de sistema. O vetor do
+  Observatório resolveria — ver [Identidade visual](identidade.md).
+
+## Regerar o print do README
+
+`docs/preview.png` envelhece calado — ninguém repara que ele mostra uma versão
+antiga até alguém abrir o README. Com o painel rodando local:
+
+```bash
+chrome --headless=new --disable-gpu --hide-scrollbars   --window-size=1440,1100 --virtual-time-budget=45000   --screenshot=docs/preview.png   http://localhost:8508/cenarios/demografico-longevidade/
+```
+
+O `--virtual-time-budget` é o que importa: sem ele o print sai na tela de
+carregamento, porque o Streamlit ainda está lendo os parquets.
+
+## Testes
+
+```bash
+pytest                 # 66 testes
+pytest -m "not tempo"  # o subconjunto que o CI roda
+```
+
+Os testes com a marca `tempo` cronometram relógio de parede e ficam fora do
+CI: num runner compartilhado a medida diz mais sobre a carga da máquina alheia
+do que sobre o código. O porquê está em `pytest.ini`.
+
+O CI (`.github/workflows/ci.yml`) roda lint, testes e o build da imagem,
+conferindo que o que ela instala é exatamente o lock.

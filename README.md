@@ -1,8 +1,8 @@
-# Dashboard Demográfico — Longevidade
+# Envelhecimento Populacional no Brasil
 
 Visualização da distribuição etária da população brasileira por estado, com foco no envelhecimento populacional (2010–2025), a partir das Projeções de População do IBGE.
 
-![preview do dashboard](docs/preview.png)
+![O painel: barra da marca, KPIs e o mapa em quartis](docs/preview.png)
 
 Acesso: https://painel.cenarios.unb.br/cenarios/demografico-longevidade
 
@@ -22,13 +22,17 @@ identidade visual** — marca, paleta roxa e a rampa do mapa vêm do
 
 ## Conteúdo
 
-- Mapa coroplético com proporção de idosos (≥ 60 anos) por estado
-- Pirâmide etária em faixas de 5 anos, por sexo
-- Distribuição por sexo, geral ou só na população idosa
-- Evolução histórica da população, 2010–2025
-- Ranking dos estados por proporção de idosos
-- KPIs com comparativo ao ano anterior (população total, % idosos, % feminina, idade média)
-- Tema claro e escuro
+- **Mapa coroplético em quartis**, com cortes fixos do período — sem basemap,
+  sem fornecedor de ladrilho
+- **Tabela dos estados mais envelhecidos**, com o valor exato que o mapa não dá
+- **Pirâmide etária** em faixas de 5 anos, por sexo
+- **Distribuição por sexo**, geral ou restrita a quem tem 60 anos ou mais
+- **Evolução da população**, 2010–2025
+- **Quatro KPIs** com comparativo ao ano anterior: pessoas com 60+, proporção
+  de 60+, índice de envelhecimento e idade média
+
+O painel fala **"60+"**, não "idosos", em tudo que o leitor vê — ver
+[Documentação dos Gráficos](docs/DOCUMENTACAO_GRAFICOS.md).
 
 ## Documentação
 
@@ -64,7 +68,17 @@ pip install -r requirements.lock.txt
 streamlit run app.py
 ```
 
-Acesse em `http://localhost:8508`. Python 3.11 (a imagem de produção é `python:3.11-slim`).
+Acesse em `http://localhost:8508/cenarios/demografico-longevidade` — o caminho
+tem prefixo porque o `.streamlit/config.toml` mantém o mesmo `baseUrlPath` de
+produção, então o que se vê local é o que está no ar.
+
+Roda em **Python 3.13** desde que o `pandas` subiu para 2.2.3, que foi a versão
+a publicar wheels `cp313`. Antes disso o lock só instalava em 3.11 e o Docker
+era obrigatório para desenvolver. A imagem de produção segue em
+`python:3.11-slim`.
+
+No Windows, `rodar_dashboard.bat` cria o ambiente na primeira execução e sobe
+o painel.
 
 ## Testes e scripts
 
