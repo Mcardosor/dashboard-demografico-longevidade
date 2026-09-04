@@ -53,6 +53,38 @@ O `start_period` do healthcheck é de 40 s porque `_carregar_base` lê 23 MB de
 parquet no primeiro acesso do processo. Antes disso o container aparece como
 `starting`, não como quebrado.
 
+## 1.5. O cartão na página inicial
+
+A rota do nginx torna o painel **alcançável**; ela não o torna
+**encontrável**. Quem chega em `https://painel.cenarios.unb.br/` vê uma grade
+de cartões, e um painel sem cartão ali só existe para quem já sabe a URL.
+
+A página não está em repositório nenhum: é um HTML solto em
+`/var/www/frontpage/index.html`, versionado por cópias `.bak-<data>` ao lado.
+Editar publica na hora — não precisa recarregar o nginx.
+
+```bash
+ssh cenarios-vm 'cp /var/www/frontpage/index.html /var/www/frontpage/index.html.bak-$(date +%Y%m%d-%H%M%S)'
+```
+
+O cartão segue o formato dos vizinhos:
+
+```html
+    <a class="card" href="/cenarios/demografico-longevidade">
+      <div class="icon">🧓</div>
+      <h2>Envelhecimento Populacional</h2>
+      <p>Pessoas com 60 anos ou mais no Brasil — proporção por estado em quartis, índice de envelhecimento e pirâmide etária. Plataforma da Longevidade / UnB</p>
+      <span class="tag new">Novo</span>
+    </a>
+```
+
+Ele fica **logo depois do `Dashboard Demográfico`**: os dois compartilham a
+base e a diferença é de marca e de recorte, então lado a lado a escolha entre
+eles fica óbvia.
+
+**Confira com cache-buster.** `https://painel.cenarios.unb.br/?v=2` — sem
+isso o navegador devolve a página antiga e a edição parece ter falhado.
+
 ## 2. A rota no nginx
 
 O arquivo é `/etc/nginx/sites-available/telessaude` (com link em
