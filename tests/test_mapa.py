@@ -171,28 +171,54 @@ def test_centro_cai_dentro_do_recorte():
 
 # ── Cor ──────────────────────────────────────────────────────────────────────
 
-def test_rampa_preserva_as_cores_do_plotly():
-    """A troca de biblioteca não mexe na identidade visual: são as três
-    paradas que o `color_continuous_scale` já usava."""
-    assert mapa.RAMPA == ("#084c96", "#2B7BB9", "#63b3ed")
+def test_cada_tema_tem_a_sua_rampa():
+    """A rampa do escuro não é o espelho da do claro.
+
+    São degraus próprios, validados contra cada superfície com
+    `scripts/validate_palette.py` do skill `dataviz`. Ver docs/identidade.md.
+    """
+    clara = THEMES["light"]["rampa"]
+    escura = THEMES["dark"]["rampa"]
+    assert clara != escura
+    assert len(clara) == len(escura) == 6
 
 
 def test_extremos_da_rampa():
-    assert mapa._interpolar(0.0) == mapa._rgb("#084c96")
-    assert mapa._interpolar(1.0) == mapa._rgb("#63b3ed")
-    assert mapa._interpolar(0.5) == mapa._rgb("#2B7BB9")
+    rampa = THEMES["light"]["rampa"]
+    assert mapa._interpolar(0.0, rampa) == mapa._rgb(rampa[0])
+    assert mapa._interpolar(1.0, rampa) == mapa._rgb(rampa[-1])
 
 
-def test_menor_proporcao_recebe_o_tom_escuro(todas_ufs):
-    """Como no mapa antigo: menos idosos, azul mais escuro."""
+def _luminancia(rgb: list[int]) -> float:
+    def canal(v):
+        v /= 255
+        return v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4
+    r, g, b = (canal(c) for c in rgb)
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+@pytest.mark.parametrize("modo", ["light", "dark"])
+def test_rampa_vai_de_claro_a_escuro(modo):
+    """Mais idosos, cor mais escura — e não o contrário.
+
+    O mapa em Plotly ia de `#084c96` (escuro) para `#63b3ed` (claro), ou seja,
+    **quanto maior a proporção, mais clara a UF**. Isso inverte a convenção de
+    rampa sequencial e faz o olho ler o mapa ao avesso. A troca de paleta
+    corrigiu de passagem.
+    """
+    rampa = THEMES[modo]["rampa"]
+    lums = [_luminancia(mapa._rgb(c)) for c in rampa]
+    assert lums == sorted(lums, reverse=True), "a rampa precisa escurecer"
+
+
+def test_maior_proporcao_recebe_o_tom_escuro(todas_ufs):
     dados = _dados(todas_ufs)
     spec = json.loads(mapa.deck(dados, TEMA).to_json())
     feicoes = spec["layers"][0]["data"]["features"]
     por_uf = {f["properties"]["uf"]: f["properties"]["cor"] for f in feicoes}
     menor = dados.loc[dados["pct_idosos"].idxmin(), "uf"]
     maior = dados.loc[dados["pct_idosos"].idxmax(), "uf"]
-    assert por_uf[menor] == mapa._rgb("#084c96")
-    assert por_uf[maior] == mapa._rgb("#63b3ed")
+    assert _luminancia(por_uf[maior]) < _luminancia(por_uf[menor])
 
 
 def test_uf_unica_nao_divide_por_zero():
@@ -200,7 +226,8 @@ def test_uf_unica_nao_divide_por_zero():
     spec = json.loads(mapa.deck(_dados(["PE"]), TEMA).to_json())
     feicoes = spec["layers"][0]["data"]["features"]
     assert len(feicoes) == 1
-    assert feicoes[0]["properties"]["cor"] == mapa._rgb(mapa.RAMPA[1])
+    rampa = THEMES["light"]["rampa"]
+    assert feicoes[0]["properties"]["cor"] == mapa._rgb(rampa[len(rampa) // 2])
 
 
 # ── Conteúdo ─────────────────────────────────────────────────────────────────

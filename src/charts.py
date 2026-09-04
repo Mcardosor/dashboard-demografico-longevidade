@@ -2,7 +2,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-from .utils import COLOR_M, COLOR_F, H_MEDIUM, H_LARGE, _apply_layout
+from .utils import H_MEDIUM, H_LARGE, _apply_layout
 
 
 def processar_dados(df: pd.DataFrame):
@@ -58,7 +58,7 @@ def fig_pizza(df: pd.DataFrame, t: dict, apenas_idosos: bool = False) -> go.Figu
 
     fig = px.pie(
         agg, names="label", values="populacao", color="label",
-        color_discrete_map={"Masculino": COLOR_M, "Feminino": COLOR_F},
+        color_discrete_map={"Masculino": t["serie_m"], "Feminino": t["serie_f"]},
         hole=0.55,
     )
     fig.update_traces(
@@ -122,13 +122,13 @@ def fig_piramide(df: pd.DataFrame, t: dict) -> go.Figure:
     fig = go.Figure([
         go.Bar(
             y=FAIXAS, x=-masc.values, name="Masculino", orientation="h",
-            marker_color=COLOR_M, marker_line_color=t["bar_line"], marker_line_width=0.6,
+            marker_color=t["serie_m"], marker_line_color=t["bar_line"], marker_line_width=0.6,
             hovertemplate="<b>%{y}</b><br>Masculino: %{customdata:,}<extra></extra>",
             customdata=masc.values,
         ),
         go.Bar(
             y=FAIXAS, x=fem.values, name="Feminino", orientation="h",
-            marker_color=COLOR_F, marker_line_color=t["bar_line"], marker_line_width=0.6,
+            marker_color=t["serie_f"], marker_line_color=t["bar_line"], marker_line_width=0.6,
             hovertemplate="<b>%{y}</b><br>Feminino: %{x:,}<extra></extra>",
         ),
     ])

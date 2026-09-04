@@ -15,8 +15,10 @@ Os dois convivem no ar, em rotas e portas diferentes, e daqui pra frente
 divergem: este recebe identidade visual própria.
 
 O que já é diferente: rota `/cenarios/demografico-longevidade`, porta 8508 no
-host, container `dashboard-demografico-longevidade` e o nome exibido. O
-restante ainda é idêntico — **a aparência é o trabalho pendente**.
+host, container `dashboard-demografico-longevidade`, o nome exibido e **a
+identidade visual** — marca, paleta roxa e a rampa do mapa vêm do
+[longevidade.unb.br](https://longevidade.unb.br). Ver
+[Identidade visual](docs/identidade.md).
 
 ## Conteúdo
 
@@ -34,6 +36,7 @@ restante ainda é idêntico — **a aparência é o trabalho pendente**.
 |---|---|
 | [Arquitetura](docs/ARQUITETURA.md) | Fluxo de dados ponta a ponta, módulos, deploy e limitações — comece por aqui |
 | [Documentação dos Gráficos](docs/DOCUMENTACAO_GRAFICOS.md) | Por que cada gráfico existe, como é calculado e o código |
+| [Identidade visual](docs/identidade.md) | A paleta roxa do Observatório, de onde veio cada cor e o que reprovou na validação |
 | [Deploy na VM](docs/deploy-vm.md) | Bootstrap na `cenarios-vm`: portas, rota do nginx e a pegadinha do prefixo |
 | [Performance](docs/performance.md) | Linha de base medida, o que foi otimizado e os alvos presos em teste |
 

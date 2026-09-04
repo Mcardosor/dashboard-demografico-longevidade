@@ -53,9 +53,15 @@ ALTURA = 500
 #: é conhecida com exatidão. Ela só decide em recortes largos e baixos.
 LARGURA = 560
 
-#: Rampa de cor, do menor para o maior. São as três paradas que o mapa em
-#: Plotly já usava — a identidade visual não muda com a troca de biblioteca.
-RAMPA = ("#084c96", "#2B7BB9", "#63b3ed")
+#: Rampa de reserva, usada só se o tema não trouxer a sua.
+#:
+#: A rampa de verdade vive em `themes.THEMES[modo]["rampa"]`, porque **cada
+#: tema tem os seus degraus** — a do escuro não é o espelho da do claro. Foram
+#: validadas com `scripts/validate_palette.py` do skill `dataviz`: monotonia
+#: de luminosidade, salto mínimo entre degraus, hue único e contraste da ponta
+#: contra a superfície. A primeira tentativa reprovou com a ponta clara a
+#: 1,48:1. Ver docs/identidade.md.
+RAMPA = ("#BFA1DB", "#A177C7", "#8A4BBF", "#6B2F96", "#552578", "#3D1A5C")
 
 #: Cor de quem não tem dado. Precisa ser distinguível de qualquer tom da rampa.
 SEM_DADO = "#E5E7EB"
@@ -91,20 +97,24 @@ def _rgb(cor: str) -> list[int]:
     return [int(texto[i : i + 2], 16) for i in (0, 2, 4)]
 
 
-def _interpolar(fracao: float) -> list[int]:
+def _interpolar(fracao: float, rampa: tuple[str, ...] = RAMPA) -> list[int]:
     """Cor da rampa na posição `fracao` (0 a 1), interpolada em RGB.
 
-    Linear e contínua, como no mapa em Plotly. A proporção de idosos varia
-    numa faixa estreita e bem distribuída entre as UFs (hoje 10% a 21%), então
-    não há a concentração que justificaria classes por quantil — que é o que
-    o sinan faz, sobre dado epidemiológico.
+    Linear e contínua. A proporção de idosos varia numa faixa estreita e bem
+    distribuída entre as UFs (hoje 10% a 21%), então não há a concentração que
+    justificaria classes por quantil — que é o que o sinan faz, sobre dado
+    epidemiológico.
+
+    Args:
+        fracao: posição na rampa, 0 (menor valor) a 1 (maior).
+        rampa: degraus do tema atual; o padrão é o do tema claro.
     """
     fracao = min(max(fracao, 0.0), 1.0)
-    passos = len(RAMPA) - 1
+    passos = len(rampa) - 1
     posicao = fracao * passos
     i = min(int(posicao), passos - 1)
     peso = posicao - i
-    ini, fim = _rgb(RAMPA[i]), _rgb(RAMPA[i + 1])
+    ini, fim = _rgb(rampa[i]), _rgb(rampa[i + 1])
     return [round(a + (b - a) * peso) for a, b in zip(ini, fim)]
 
 
@@ -318,6 +328,7 @@ def deck(df_idosos: pd.DataFrame, t: dict) -> pydeck.Deck:
     ufs = tuple(df_idosos["uf"])
     geometrias = _geometrias(ufs)
 
+    rampa = tuple(t.get("rampa", RAMPA))
     valores = df_idosos["pct_idosos"]
     minimo = float(valores.min()) if len(valores) else 0.0
     maximo = float(valores.max()) if len(valores) else 0.0
@@ -326,7 +337,11 @@ def deck(df_idosos: pd.DataFrame, t: dict) -> pydeck.Deck:
     feicoes = []
     for geometria, (_, linha) in zip(geometrias, df_idosos.iterrows()):
         pct = float(linha["pct_idosos"])
-        cor = _interpolar((pct - minimo) / faixa) if faixa > 0 else _rgb(RAMPA[1])
+        cor = (
+            _interpolar((pct - minimo) / faixa, rampa)
+            if faixa > 0
+            else _rgb(rampa[len(rampa) // 2])
+        )
         feicoes.append({
             "type": "Feature",
             "geometry": geometria,
@@ -403,7 +418,7 @@ def legenda(df_idosos: pd.DataFrame, t: dict) -> str:
     if not len(valores):
         return ""
     minimo, maximo = float(valores.min()), float(valores.max())
-    paradas = ", ".join(RAMPA)
+    paradas = ", ".join(t.get("rampa", RAMPA))
     return f"""
     <div style="display:flex;align-items:center;gap:10px;margin-top:8px;
                 font-size:.78rem;color:{t['text_muted']}">

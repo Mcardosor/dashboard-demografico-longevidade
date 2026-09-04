@@ -10,7 +10,7 @@ desenhado com pydeck e não usa basemap. O porquê está em docs/performance.md.
 
 import streamlit as st
 
-from src.themes import THEMES, _css, inject_toggle
+from src.themes import THEMES, _css, inject_toggle, marca_html, ROXO_MARCA
 from src.data import anos_disponiveis, carregar_dados, carregar_evolucao, carregar_geojson
 from src.charts import processar_dados, fig_pizza, fig_piramide, fig_ranking, fig_evolucao
 from src import mapa
@@ -133,13 +133,17 @@ st.markdown(_css(t), unsafe_allow_html=True)
 st.markdown("<style>iframe[height='50']{display:none!important;margin:0;padding:0;height:0!important}</style>", unsafe_allow_html=True)
 inject_toggle()
 if st.session_state.theme == "light":
-    st.markdown("""
-    <div class="cenarios-bar">
-      <span class="cenarios-bar-logo">Cenários<span>+</span></span>
-      <span class="cenarios-bar-sep">|</span>
-      <span class="cenarios-bar-title">Dashboard Demográfico — Longevidade</span>
-    </div>
-    """, unsafe_allow_html=True)
+    # O wordmark reproduz o logo oficial: "Plataforma" leve por cima,
+    # "Longevidade" pesado, com a flor de cinco pétalas no lugar do "o".
+    #
+    # Na barra roxa a flor é **branca com o miolo roxo**, e não magenta como
+    # no arquivo original: #AA2DA3 sobre #6B2F96 empasta — são dois roxos
+    # vizinhos. Assim a forma se preserva e o contraste funciona. O magenta
+    # continua sendo o acento da marca (`accent2`) onde há fundo claro.
+    st.markdown(
+        f'<div class="marca-bar">{marca_html("Dashboard Demográfico")}</div>',
+        unsafe_allow_html=True,
+    )
 
 # ── Dados ─────────────────────────────────────────────────────────────────────
 df_raw             = carregar_dados(ano_sel)
@@ -271,16 +275,16 @@ with col_rank:
 st.divider()
 
 # ── Footer ────────────────────────────────────────────────────────────────────
-st.markdown("""
-<div class="cenarios-footer" style="
-    background:#2B7BB9;
+st.markdown(f"""
+<div class="marca-footer" style="
+    background:{ROXO_MARCA};
     border-radius:12px;
     padding:28px 36px;
     margin-top:8px;
 ">
-    <div style="font-size:1.2rem;font-weight:800;color:#ffffff;letter-spacing:-0.3px;margin-bottom:4px;">
-        Cenários<span style="color:#E07B54">+</span>
+    <div style="font-size:1.25rem;margin-bottom:6px;">{marca_html()}</div>
+    <div style="font-size:.82rem;color:rgba(255,255,255,.75);">
+        Observatório da Longevidade · Universidade de Brasília
     </div>
-    <div style="font-size:.82rem;color:rgba(255,255,255,.75);">Todos os direitos reservados.</div>
 </div>
 """, unsafe_allow_html=True)

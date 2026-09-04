@@ -1,3 +1,48 @@
+"""Tema, CSS e a marca do painel."""
+
+#: A flor de cinco pétalas do logo da Plataforma da Longevidade, que no
+#: original ocupa o lugar do "o" de "Longevidade".
+#:
+#: Refeita em SVG, e não recortada do JPEG oficial (823x247, fundo branco):
+#: assim escala sem serrilhar, funciona no tema escuro — onde uma caixa branca
+#: ficaria evidente — e as pétalas herdam a cor do texto via `currentColor`.
+#:
+#: O `{miolo}` é a cor do centro, que precisa casar com o fundo atrás da flor.
+FLOR_SVG = """<svg class="marca-flor" viewBox="0 0 100 100" aria-hidden="true">
+        <g fill="currentColor">
+          <ellipse cx="50" cy="25" rx="19" ry="24"/>
+          <ellipse cx="50" cy="25" rx="19" ry="24" transform="rotate(72 50 50)"/>
+          <ellipse cx="50" cy="25" rx="19" ry="24" transform="rotate(144 50 50)"/>
+          <ellipse cx="50" cy="25" rx="19" ry="24" transform="rotate(216 50 50)"/>
+          <ellipse cx="50" cy="25" rx="19" ry="24" transform="rotate(288 50 50)"/>
+        </g>
+        <circle cx="50" cy="50" r="15" fill="{miolo}"/>
+      </svg>"""
+
+#: Roxo da barra e do rodapé — a primária do longevidade.unb.br.
+ROXO_MARCA = "#6B2F96"
+
+
+def marca_html(titulo: str = "") -> str:
+    """Wordmark da Plataforma da Longevidade, pronto para `unsafe_allow_html`.
+
+    Args:
+        titulo: texto do lado direito, após o separador. Vazio omite os dois.
+    """
+    flor = FLOR_SVG.format(miolo=ROXO_MARCA)
+    marca = (
+        '<span class="marca-bar-logo">'
+        '<span class="marca-bar-pre">Plataforma</span>'
+        f'L{flor}ngevidade</span>'
+    )
+    if not titulo:
+        return marca
+    return (
+        f'{marca}<span class="marca-bar-sep">|</span>'
+        f'<span class="marca-bar-title">{titulo}</span>'
+    )
+
+
 THEMES = {
     "dark": {
         "bg":          "#0d1117",
@@ -9,38 +54,48 @@ THEMES = {
         "border":      "#30363d",
         "border_hero": "#21262d",
         "grid":        "#21262d",
-        "accent":      "#58a6ff",
+        "accent":      "#A177C7",
         "success":     "#7ee787",
         "danger":      "#f85149",
-        "hero_bg":     "linear-gradient(135deg,#161b22 0%,#0d1117 60%,#0d2137 100%)",
+        "hero_bg":     "linear-gradient(135deg,#1b1425 0%,#0d1117 60%,#241436 100%)",
         "map_line":    "#30363d",
         "bar_line":    "#0d1117",
         "footer":      "#484f58",
         "sidebar_bg":  "#010409",
         "toggle_icon": "☀️",
         "toggle_label":"Modo claro",
+        # Série categórica e rampa do mapa: degraus **próprios** do tema
+        # escuro, não o espelho do claro. Ver docs/identidade.md.
+        "serie_m":     "#9E79CC",
+        "serie_f":     "#EA630E",
+        "rampa":       ("#E0CDF2", "#C6ACE0", "#AE8AD2",
+                        "#9668C4", "#7F4DB8", "#6B3F9E"),
     },
     "light": {
         "bg":          "#f6f8fa",
         "bg_card":     "rgba(255,255,255,.98)",
         "bg_plot":     "rgba(0,0,0,0)",
         "text":        "#24292f",
-        "text_title":  "#1a3a5c",
+        "text_title":  "#3D1A5C",
         "text_muted":  "#57606a",
         "border":      "#d0d7de",
-        "border_hero": "#b8d4ee",
+        "border_hero": "#E4DAF0",
         "grid":        "#eaecef",
-        "accent":      "#2B7BB9",
-        "accent2":     "#E07B54",
+        "accent":      "#6B2F96",
+        "accent2":     "#AA2DA3",
         "success":     "#1a7f37",
         "danger":      "#cf222e",
-        "hero_bg":     "linear-gradient(135deg,#ffffff 0%,#eaf2fb 60%,#d4e8f6 100%)",
+        "hero_bg":     "linear-gradient(135deg,#ffffff 0%,#F5F0FA 60%,#E9DCF6 100%)",
         "map_line":    "#d0d7de",
         "bar_line":    "#f6f8fa",
         "footer":      "#8c959f",
         "sidebar_bg":  "#ffffff",
         "toggle_icon": "🌙",
         "toggle_label":"Modo escuro",
+        "serie_m":     "#7F4DB8",
+        "serie_f":     "#C0663C",
+        "rampa":       ("#BFA1DB", "#A177C7", "#8A4BBF",
+                        "#6B2F96", "#552578", "#3D1A5C"),
     },
 }
 
@@ -166,29 +221,50 @@ def _css(t: dict) -> str:
     margin: 0 0 12px; line-height: 1.5;
   }}
 
-  /* ── Cenários+ header bar (tema claro apenas) ── */
-  .cenarios-bar {{
-    background: #2B7BB9;
+  /* ── Barra da marca (tema claro apenas) ── */
+  .marca-bar {{
+    background: #6B2F96;
     padding: 8px 24px;
     margin: 0.5rem -1rem 1.5rem -1rem;
     display: flex;
     align-items: center;
     gap: 8px;
   }}
-  .cenarios-bar-logo {{
-    font-size: 1.1rem;
+  /* O wordmark: "Plataforma" leve por cima, "Longevidade" pesado embaixo,
+     com a flor no lugar do "o" — como no logo oficial. Peso 800 e fonte de
+     sistema acompanham o longevidade.unb.br, que não carrega webfont. */
+  .marca-bar-logo {{
+    display: flex;
+    align-items: center;
+    gap: 1px;
+    font-size: 1.15rem;
     font-weight: 800;
     color: #ffffff;
-    letter-spacing: -0.3px;
+    letter-spacing: -0.4px;
+    line-height: 1;
   }}
-  .cenarios-bar-logo span {{
-    color: #E07B54;
+  .marca-bar-pre {{
+    font-size: .62rem;
+    font-weight: 400;
+    letter-spacing: .06em;
+    color: rgba(255,255,255,.72);
+    align-self: flex-start;
+    margin-right: 7px;
+    padding-top: 1px;
   }}
-  .cenarios-bar-sep {{
-    color: rgba(255,255,255,.4);
-    margin: 0 6px;
+  /* A flor ocupa o lugar da letra, então acompanha a altura do texto. */
+  .marca-flor {{
+    width: .78em;
+    height: .78em;
+    margin: 0 .02em;
+    position: relative;
+    top: .04em;
   }}
-  .cenarios-bar-title {{
+  .marca-bar-sep {{
+    color: rgba(255,255,255,.35);
+    margin: 0 10px;
+  }}
+  .marca-bar-title {{
     font-size: .85rem;
     font-weight: 500;
     color: rgba(255,255,255,.85);
@@ -430,14 +506,14 @@ _THEME_TOGGLE_JS = """
   var obs = new p.MutationObserver(function() { ensureButton(); });
   obs.observe(p.document.body, { childList: true });
 
-  // Evitar auto-scroll do Streamlit que empurra a cenarios-bar para cima
+  // Evitar auto-scroll do Streamlit que empurra a marca-bar para cima
   setTimeout(function() { p.scrollTo(0, 0); }, 300);
 })();
 </script>
 
   /* ── Footer dark mode ─── */
-  [data-theme="dark"] .cenarios-footer {
-    background: #161b22 !important;
+  [data-theme="dark"] .marca-footer {
+    background: #1b1425 !important;
     border-top: 1px solid #30363d !important;
   }
 """

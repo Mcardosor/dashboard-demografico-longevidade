@@ -2,7 +2,10 @@ import plotly.graph_objects as go
 
 PLOTLY_CFG = {"displayModeBar": True, "scrollZoom": False}
 H_SMALL, H_MEDIUM, H_LARGE = 320, 420, 680
-COLOR_M, COLOR_F = "#58a6ff", "#f778ba"
+# As cores de série mudaram de lugar: vivem em `themes.THEMES[modo]`, porque
+# cada tema tem o seu par validado. Ver docs/identidade.md — o par "roxo da
+# marca + magenta da flor", que era o óbvio, reprova em daltonismo E em visão
+# normal de cor.
 
 REGIOES = {
     "Norte":     ["AC","AM","AP","PA","RO","RR","TO"],
