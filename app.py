@@ -1,8 +1,9 @@
 """
 app.py — Dashboard Demográfico Longevidade (Streamlit + Plotly + pydeck).
 
-Distribuição etária, proporção de idosos e evolução populacional por
-estado, a partir das Projeções de População do IBGE (2010-2025).
+Distribuição etária, proporção de pessoas com 60 anos ou mais e evolução
+populacional por estado, a partir das Projeções de População do IBGE
+(2010-2025).
 
 O coroplético é o único gráfico fora do Plotly: mora em `src/mapa.py`, é
 desenhado com pydeck e não usa basemap. O porquê está em docs/performance.md.
@@ -221,8 +222,9 @@ st.markdown(f"""
 <div class="hero">
   <h1 class="hero-title">Envelhecimento Populacional no Brasil</h1>
   <p class="hero-subtitle">
-    Análise demográfica com distribuição etária, proporção de idosos,
-    pirâmide populacional e evolução histórica por estado.
+    Distribuição etária, proporção de pessoas com 60 anos ou mais e
+    evolução histórica da população, por estado. Fonte: Projeções de
+    População do IBGE.
   </p>
   <div class="hero-badges">
     <span class="hero-badge accent"><span class="dot"></span>{_label_ufs}</span>
