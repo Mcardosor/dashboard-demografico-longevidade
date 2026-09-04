@@ -136,7 +136,19 @@ with st.sidebar:
 # ── Tema ──────────────────────────────────────────────────────────────────────
 st.markdown(_css(t), unsafe_allow_html=True)
 
-st.markdown("<style>iframe[height='50']{display:none!important;margin:0;padding:0;height:0!important}</style>", unsafe_allow_html=True)
+# Esconde o iframe do componente que injeta o botão de tema — ele não tem
+# conteúdo visível, só script.
+#
+# O seletor era `iframe[height='50']`. O Streamlit 1.63 parou de emitir o
+# atributo `height`, o seletor deixou de casar e o iframe apareceu na página.
+# `data-testid="stIFrame"` é o identificador estável; o antigo fica junto para
+# o caso de uma versão anterior. Se algum dia o painel usar `components.html`
+# para algo visível, esta regra precisa ser restringida.
+st.markdown(
+    "<style>iframe[data-testid='stIFrame'], iframe[height='50']"
+    "{display:none!important;margin:0;padding:0;height:0!important}</style>",
+    unsafe_allow_html=True,
+)
 inject_toggle()
 if st.session_state.theme == "light":
     # O wordmark reproduz o logo oficial: "Plataforma" leve por cima,

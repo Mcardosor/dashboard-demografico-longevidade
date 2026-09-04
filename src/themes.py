@@ -433,6 +433,15 @@ _DARK_CSS = """
   [data-theme="dark"] .js-plotly-plot .plotly .ytick text { fill: #8b949e !important; }
   [data-theme="dark"] .js-plotly-plot .plotly .gridlayer path { stroke: #21262d !important; }
   [data-theme="dark"] #_tb_theme_btn { background: rgba(22,27,34,.9) !important; border-color: #30363d !important; color: #e6edf3 !important; }
+
+  /* Rodapé no modo escuro. Estava solto no fim de `_THEME_TOGGLE_JS`, fora de
+     qualquer <style> — texto cru dentro do HTML do componente. Ficou
+     invisível por acidente até o Streamlit 1.63, que mudou o iframe e o
+     deixou à mostra na página. */
+  [data-theme="dark"] .marca-footer {
+    background: #1b1425 !important;
+    border-top: 1px solid #30363d !important;
+  }
 """
 
 _THEME_TOGGLE_JS = """
@@ -512,12 +521,6 @@ _THEME_TOGGLE_JS = """
   setTimeout(function() { p.scrollTo(0, 0); }, 300);
 })();
 </script>
-
-  /* ── Footer dark mode ─── */
-  [data-theme="dark"] .marca-footer {
-    background: #1b1425 !important;
-    border-top: 1px solid #30363d !important;
-  }
 """
 
 
