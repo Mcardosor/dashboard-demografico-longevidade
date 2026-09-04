@@ -366,30 +366,61 @@ def _camadas(ufs):
     return {c["@@type"]: c for c in spec["layers"]}
 
 
-def test_df_ganha_disco_no_mapa_do_brasil(todas_ufs):
+def _camadas_lista(ufs):
+    spec = json.loads(mapa.deck(_dados(ufs), TEMA).to_json())
+    return spec["layers"]
+
+
+def _ampliada(ufs):
+    camadas = _camadas_lista(ufs)
+    return camadas[1]["data"]["features"] if len(camadas) > 1 else []
+
+
+def test_df_e_ampliado_no_mapa_do_brasil(todas_ufs):
     """No enquadramento do país o DF mede ~9x5 px — acertá-lo com o ponteiro
-    é pontaria. O disco é o tratamento cartográfico usual para enclave
-    pequeno."""
-    disco = _camadas(todas_ufs)["ScatterplotLayer"]
-    assert [p["uf"] for p in disco["data"]] == ["DF"]
+    é pontaria."""
+    assert [f["properties"]["uf"] for f in _ampliada(todas_ufs)] == ["DF"]
 
 
-def test_disco_some_quando_a_uf_ja_e_grande():
-    """O limite é o tamanho na tela, não a identidade da UF: com o DF
-    sozinho o recorte aproxima, ele fica grande e o disco perde a razão de
-    existir."""
-    assert "ScatterplotLayer" not in _camadas(["DF"])
+def test_ampliacao_some_quando_a_uf_ja_e_grande():
+    """O critério é o tamanho na tela, não a identidade da UF: com o DF
+    sozinho o recorte aproxima e a ampliação perde a razão de existir."""
+    assert len(_camadas_lista(["DF"])) == 1
 
 
-def test_disco_usa_a_cor_da_classe_da_uf(todas_ufs):
-    """O disco não pode inventar informação: é a mesma cor que o polígono."""
-    camadas = _camadas(todas_ufs)
-    disco = camadas["ScatterplotLayer"]["data"][0]
-    poligono = next(
-        f for f in camadas["GeoJsonLayer"]["data"]["features"]
+def test_ampliacao_preserva_a_forma(todas_ufs):
+    """O ponto do pedido: ampliar, não substituir por um círculo.
+
+    A geometria ampliada precisa ser a mesma do polígono original, com o
+    mesmo número de vértices — só maior.
+    """
+    ampliada = _ampliada(todas_ufs)[0]["geometry"]
+    original = mapa._geometrias(("DF",))[0]
+    assert ampliada["type"] == original["type"]
+    assert len(mapa._partes([ampliada])[0]) == len(mapa._partes([original])[0])
+
+
+def test_ampliacao_e_maior_e_concentrica(todas_ufs):
+    """Maior que o original e em torno do mesmo centro — não deslocada."""
+    ampliada = _ampliada(todas_ufs)[0]["geometry"]
+    original = mapa._geometrias(("DF",))[0]
+    ax0, ay0, ax1, ay1 = mapa._caixa(mapa._partes([ampliada]))
+    ox0, oy0, ox1, oy1 = mapa._caixa(mapa._partes([original]))
+    assert (ax1 - ax0) > (ox1 - ox0)
+    assert (ax0 + ax1) / 2 == pytest.approx((ox0 + ox1) / 2, abs=1e-6)
+    assert (ay0 + ay1) / 2 == pytest.approx((oy0 + oy1) / 2, abs=1e-6)
+
+
+def test_ampliacao_usa_a_cor_da_classe_da_uf(todas_ufs):
+    """Não pode inventar informação: é a mesma cor que o polígono original."""
+    camadas = _camadas_lista(todas_ufs)
+    ampliada = camadas[1]["data"]["features"][0]["properties"]["cor"]
+    original = next(
+        f["properties"]["cor"]
+        for f in camadas[0]["data"]["features"]
         if f["properties"]["uf"] == "DF"
     )
-    assert disco["cor"] == poligono["properties"]["cor"]
+    assert ampliada == original
 
 
 def test_raio_de_captura_declarado(todas_ufs):
@@ -407,10 +438,7 @@ def test_disco_nao_deixa_string_virar_acessor(todas_ufs):
     apontar para um nome que não é campo dos dados.
     """
     spec = json.loads(mapa.deck(_dados(todas_ufs), TEMA).to_json())
-    disco = next(c for c in spec["layers"] if c["@@type"] == "ScatterplotLayer")
-    campos = set(disco["data"][0])
-    for chave, valor in disco.items():
-        if isinstance(valor, str) and valor.startswith("@@="):
-            nome = valor[3:].strip("[]")
-            for parte in nome.split(","):
-                assert parte.strip() in campos, f"{chave}={valor}"
+    for camada in spec["layers"]:
+        for chave, valor in camada.items():
+            if isinstance(valor, str) and valor.startswith("@@="):
+                assert valor.startswith("@@=properties."), f"{chave}={valor}"

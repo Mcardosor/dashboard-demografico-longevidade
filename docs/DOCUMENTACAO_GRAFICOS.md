@@ -40,10 +40,14 @@ fixo não acrescenta leitura.
 **O Distrito Federal ganha um disco.** No enquadramento do país ele mede uns
 9x5 px, e acertá-lo com o ponteiro era pontaria. `pickingRadius` não resolve
 — o deck só procura no raio quando não há nada sob o cursor, e o DF é cercado
-por Goiás; medido, a 6 px do DF o tooltip mostrava GO. O disco é o tratamento
-cartográfico usual para enclave pequeno: mesma cor da classe, para não
-inventar informação, e alvo de 14 px. Ele some sozinho quando o recorte
-aproxima e a UF já está grande.
+por Goiás; medido, a 6 px do DF o tooltip mostrava GO. A solução é redesenhá-lo
+**ampliado em torno do próprio centro, mantendo a forma** — mesma cor da
+classe, para não inventar informação, e contorno branco sinalizando que
+aquele polígono está fora de escala, como um encarte ampliado em mapa
+impresso. Some sozinho quando o recorte aproxima e a UF já está grande.
+
+Uma primeira versão usava um disco. Resolvia a pontaria, mas trocava a forma
+reconhecível do DF por um círculo — descaracterizava o mapa sem necessidade.
 
 **Sem basemap.** Era um `choropleth_mapbox` sobre ladrilhos `carto-positron` até a CARTO passar a exigir chave — o painel em produção desenhava "API KEY REQUIRED" repetido sob a malha. Trocar de fornecedor de ladrilho só adiaria o problema: um coroplético por estado não precisa de rua nem de rio embaixo, a informação é a cor da UF. Sem ladrilho não há chave, nem requisição a terceiro, nem fornecedor que possa repetir isto.
 
