@@ -3,21 +3,18 @@
 #: A flor de cinco pétalas do logo da Plataforma da Longevidade, que no
 #: original ocupa o lugar do "o" de "Longevidade".
 #:
+#: Pétalas são **círculos sobrepostos**, não elipses. A primeira versão usava
+#: elipses finas e a flor saía magra e miúda ao lado das letras — parecia um
+#: borrão entre o "L" e o "n", não a letra que ela substitui. Círculos de raio
+#: 27 a 27 de distância do centro se sobrepõem e dão a roseta gorda do
+#: original.
+#:
 #: Refeita em SVG, e não recortada do JPEG oficial (823x247, fundo branco):
 #: assim escala sem serrilhar, funciona no tema escuro — onde uma caixa branca
 #: ficaria evidente — e as pétalas herdam a cor do texto via `currentColor`.
 #:
 #: O `{miolo}` é a cor do centro, que precisa casar com o fundo atrás da flor.
-FLOR_SVG = """<svg class="marca-flor" viewBox="0 0 100 100" aria-hidden="true">
-        <g fill="currentColor">
-          <ellipse cx="50" cy="25" rx="19" ry="24"/>
-          <ellipse cx="50" cy="25" rx="19" ry="24" transform="rotate(72 50 50)"/>
-          <ellipse cx="50" cy="25" rx="19" ry="24" transform="rotate(144 50 50)"/>
-          <ellipse cx="50" cy="25" rx="19" ry="24" transform="rotate(216 50 50)"/>
-          <ellipse cx="50" cy="25" rx="19" ry="24" transform="rotate(288 50 50)"/>
-        </g>
-        <circle cx="50" cy="50" r="15" fill="{miolo}"/>
-      </svg>"""
+FLOR_SVG = """<svg class="marca-flor" viewBox="0 0 100 100" aria-hidden="true"><g fill="currentColor"><circle cx="50.0" cy="23.0" r="27"/><circle cx="75.7" cy="41.7" r="27"/><circle cx="65.9" cy="71.8" r="27"/><circle cx="34.1" cy="71.8" r="27"/><circle cx="24.3" cy="41.7" r="27"/></g><circle cx="50" cy="50" r="16" fill="{miolo}"/></svg>"""
 
 #: Roxo da barra e do rodapé — a primária do longevidade.unb.br.
 ROXO_MARCA = "#6B2F96"
@@ -30,10 +27,14 @@ def marca_html(titulo: str = "") -> str:
         titulo: texto do lado direito, após o separador. Vazio omite os dois.
     """
     flor = FLOR_SVG.format(miolo=ROXO_MARCA)
+    # Empilhado, como no logo oficial: "Plataforma" em cima, leve; o nome
+    # embaixo, pesado. A primeira versão punha os dois na mesma linha e
+    # descaracterizava a marca.
     marca = (
         '<span class="marca-bar-logo">'
         '<span class="marca-bar-pre">Plataforma</span>'
-        f'L{flor}ngevidade</span>'
+        f'<span class="marca-bar-nome">L{flor}ngevidade</span>'
+        '</span>'
     )
     if not titulo:
         return marca
@@ -235,32 +236,38 @@ def _css(t: dict) -> str:
   /* O wordmark: "Plataforma" leve por cima, "Longevidade" pesado embaixo,
      com a flor no lugar do "o" — como no logo oficial. Peso 800 e fonte de
      sistema acompanham o longevidade.unb.br, que não carrega webfont. */
+  /* Lockup empilhado, como no logo: "Plataforma" leve por cima, o nome
+     pesado embaixo. */
   .marca-bar-logo {{
     display: flex;
-    align-items: center;
-    gap: 1px;
-    font-size: 1.15rem;
-    font-weight: 800;
-    color: #ffffff;
-    letter-spacing: -0.4px;
+    flex-direction: column;
+    justify-content: center;
     line-height: 1;
+    color: #ffffff;
   }}
   .marca-bar-pre {{
-    font-size: .62rem;
+    font-size: .60rem;
     font-weight: 400;
-    letter-spacing: .06em;
-    color: rgba(255,255,255,.72);
-    align-self: flex-start;
-    margin-right: 7px;
-    padding-top: 1px;
+    letter-spacing: .10em;
+    color: rgba(255,255,255,.75);
+    margin-bottom: 3px;
   }}
-  /* A flor ocupa o lugar da letra, então acompanha a altura do texto. */
+  .marca-bar-nome {{
+    display: flex;
+    align-items: center;
+    font-size: 1.22rem;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+  }}
+  /* A flor É a letra "o": mesma altura das minúsculas, alinhada pelo miolo.
+     A 0.78em ela saía pequena demais e lia como sujeira entre as letras. */
   .marca-flor {{
-    width: .78em;
-    height: .78em;
-    margin: 0 .02em;
+    width: .92em;
+    height: .92em;
+    margin: 0 -.02em;
     position: relative;
-    top: .04em;
+    top: .01em;
+    flex: none;
   }}
   .marca-bar-sep {{
     color: rgba(255,255,255,.35);
