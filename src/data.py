@@ -94,3 +94,33 @@ def carregar_evolucao() -> pd.DataFrame:
         pd.DataFrame: colunas `uf`, `ano`, `populacao`.
     """
     return _carregar_base().groupby(["uf", "ano"], as_index=False)["populacao"].sum()
+
+
+@st.cache_data(show_spinner=False)
+def cortes_quartis() -> tuple[float, float, float]:
+    """Os três cortes que dividem as UFs em quartis no mapa.
+
+    Calculados **uma vez, sobre todos os anos e todas as UFs juntos** — não
+    por ano e não sobre o filtro. Os dois motivos são de leitura, não de
+    implementação:
+
+    - **Por ano não serve.** Quartil é medida relativa: recalculado a cada
+      ano, ele sempre põe um quarto das UFs em cada classe. Medido: 7/6/7/7
+      em 2010 e 7/6/7/7 em 2025. O mapa dos dois anos sairia igual, e o
+      envelhecimento do país — que é o assunto do painel — ficaria invisível.
+      Com corte fixo, 2010 tem nenhuma UF na classe mais alta e 2025 tem
+      dezoito.
+    - **Sobre o filtro, muito menos.** Recalcular sobre os estados
+      selecionados faria os sobreviventes trocarem de cor a cada filtro. A
+      cor precisa seguir o estado, não a posição dele num recorte.
+
+    Returns:
+        tuple[float, float, float]: os cortes de 25%, 50% e 75%, em pontos
+            percentuais de população com 60+.
+    """
+    base = _carregar_base()
+    total = base.groupby(["ano", "uf"])["populacao"].sum()
+    idosos = base[base["idade"] >= 60].groupby(["ano", "uf"])["populacao"].sum()
+    pct = (idosos / total * 100).dropna()
+    q = pct.quantile([0.25, 0.50, 0.75])
+    return (float(q.loc[0.25]), float(q.loc[0.50]), float(q.loc[0.75]))

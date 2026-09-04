@@ -10,6 +10,24 @@ Por que cada gráfico existe, como é calculado e onde está o código.
 
 **Código:** `src/mapa.py::deck()`, com a legenda em `src/mapa.py::legenda()`
 
+**Escala em quartis, com cortes fixos.** O mapa tem quatro classes, e os
+cortes (9,5 / 11,8 / 13,8%) são calculados **uma vez sobre todos os anos e
+todas as UFs** — não por ano e não sobre o filtro.
+
+Por ano não serviria: quartil é medida relativa e sempre põe um quarto das
+UFs em cada classe. Medido, dá 7/6/7/7 em 2010 e 7/6/7/7 em 2025 — os dois
+mapas sairiam iguais e o envelhecimento do país ficaria invisível. Com corte
+fixo, 2010 não tem nenhuma UF na classe mais alta e 2025 tem dezoito.
+
+Sobre o filtro, muito menos: recalcular sobre os estados selecionados faria
+os sobreviventes mudarem de cor a cada filtro, e a cor passaria a descrever a
+posição do estado no recorte em vez da proporção dele. Preso em
+`test_cortes_nao_mudam_com_o_filtro`.
+
+O custo assumido é que em 2025 dois terços das UFs caem na classe mais alta —
+o mapa perde distinção dentro do ano atual em troca de ser comparável entre
+anos.
+
 **Sem basemap.** Era um `choropleth_mapbox` sobre ladrilhos `carto-positron` até a CARTO passar a exigir chave — o painel em produção desenhava "API KEY REQUIRED" repetido sob a malha. Trocar de fornecedor de ladrilho só adiaria o problema: um coroplético por estado não precisa de rua nem de rio embaixo, a informação é a cor da UF. Sem ladrilho não há chave, nem requisição a terceiro, nem fornecedor que possa repetir isto.
 
 **A malha é pré-processada.** `scripts/preparar_geometria.py` roda uma vez e escreve `data/ufs.geojson`: simplificação topológica (85.585 → 4.469 vértices), 5 casas decimais e só a propriedade `sigla`. Só as UFs selecionadas são enviadas, e o spec sai sem indentação. O payload caiu de 1.953 KB para 98 KB no Brasil e 3 KB numa UF — ver [Performance](performance.md).

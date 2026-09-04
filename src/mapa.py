@@ -30,7 +30,7 @@ import pandas as pd
 import pydeck
 import streamlit as st
 
-from .data import carregar_geojson
+from .data import carregar_geojson, cortes_quartis
 
 #: Altura do mapa, em pixels. Era a do Plotly; mantida para não mexer no
 #: alinhamento com a tabela de Top 5, que divide a linha.
@@ -66,6 +66,15 @@ RAMPA = ("#BFA1DB", "#A177C7", "#8A4BBF", "#6B2F96", "#552578", "#3D1A5C")
 #: Cor de quem não tem dado. Precisa ser distinguível de qualquer tom da rampa.
 SEM_DADO = "#E5E7EB"
 
+#: Número de classes do mapa. Quartis, por pedido da coordenação.
+#:
+#: A escala deixou de ser contínua: antes a cor variava suavemente com o
+#: valor, o que mostra bem a ordem mas dificulta dizer "este estado está no
+#: grupo mais envelhecido". Com quatro classes a leitura vira de grupo.
+#:
+#: Os cortes vêm de `data.cortes_quartis()` e são **fixos** — ver lá o porquê.
+CLASSES = 4
+
 #: Folha de estilo **vazia**, no formato do MapLibre/Mapbox GL: sem fontes e
 #: sem camadas. É o que garante que nenhum ladrilho seja pedido a ninguém.
 #:
@@ -95,6 +104,24 @@ def _rgb(cor: str) -> list[int]:
     """`#RRGGBB` para `[r, g, b]`, que é como o deck.gl espera."""
     texto = cor.lstrip("#")
     return [int(texto[i : i + 2], 16) for i in (0, 2, 4)]
+
+
+def cores_das_classes(rampa: tuple[str, ...]) -> list[list[int]]:
+    """As `CLASSES` cores do mapa, tiradas em passos iguais da rampa do tema.
+
+    Revalidadas como escala ordinal com `scripts/validate_palette.py`: quatro
+    degraus não herdam a validação dos seis da rampa cheia.
+    """
+    return [_interpolar(i / (CLASSES - 1), rampa) for i in range(CLASSES)]
+
+
+def classificar(valor: float, cortes: tuple[float, ...]) -> int:
+    """Índice da classe (0 a `CLASSES`-1) a que o valor pertence.
+
+    O corte é o piso da classe seguinte: um valor exatamente igual a um corte
+    sobe. Assim cada valor cai em uma classe só, sem depender de arredondar.
+    """
+    return sum(1 for c in cortes if valor >= c)
 
 
 def _interpolar(fracao: float, rampa: tuple[str, ...] = RAMPA) -> list[int]:
@@ -329,19 +356,13 @@ def deck(df_idosos: pd.DataFrame, t: dict) -> pydeck.Deck:
     geometrias = _geometrias(ufs)
 
     rampa = tuple(t.get("rampa", RAMPA))
-    valores = df_idosos["pct_idosos"]
-    minimo = float(valores.min()) if len(valores) else 0.0
-    maximo = float(valores.max()) if len(valores) else 0.0
-    faixa = maximo - minimo
+    cores = cores_das_classes(rampa)
+    cortes = cortes_quartis()
 
     feicoes = []
     for geometria, (_, linha) in zip(geometrias, df_idosos.iterrows()):
         pct = float(linha["pct_idosos"])
-        cor = (
-            _interpolar((pct - minimo) / faixa, rampa)
-            if faixa > 0
-            else _rgb(rampa[len(rampa) // 2])
-        )
+        cor = cores[classificar(pct, cortes)]
         feicoes.append({
             "type": "Feature",
             "geometry": geometria,
@@ -409,24 +430,38 @@ def deck(df_idosos: pd.DataFrame, t: dict) -> pydeck.Deck:
 
 
 def legenda(df_idosos: pd.DataFrame, t: dict) -> str:
-    """HTML da legenda de cor.
+    """HTML da legenda: as `CLASSES` faixas, com o intervalo de cada uma.
 
-    O deck.gl não tem barra de cor como o Plotly tinha; a rampa é desenhada
-    com um `linear-gradient` em CSS, que custa zero byte de payload.
+    Era um gradiente contínuo com os extremos anotados. Com o mapa em classes
+    o gradiente mentiria: sugeriria variação suave onde há degrau. Cada
+    amostra traz o intervalo que representa, para o leitor conseguir dizer em
+    que grupo um estado caiu sem precisar comparar tons.
+
+    Os intervalos são os mesmos em qualquer filtro e em qualquer ano — é o
+    que torna dois anos comparáveis lado a lado.
     """
-    valores = df_idosos["pct_idosos"]
-    if not len(valores):
-        return ""
-    minimo, maximo = float(valores.min()), float(valores.max())
-    paradas = ", ".join(t.get("rampa", RAMPA))
-    return f"""
-    <div style="display:flex;align-items:center;gap:10px;margin-top:8px;
-                font-size:.78rem;color:{t['text_muted']}">
-      <span>% com 60+</span>
-      <span>{minimo:.1f}%</span>
-      <div style="flex:1;height:10px;border-radius:5px;
-                  border:1px solid {t['border']};
-                  background:linear-gradient(to right, {paradas})"></div>
-      <span>{maximo:.1f}%</span>
+    cortes = cortes_quartis()
+    cores = cores_das_classes(tuple(t.get("rampa", RAMPA)))
+
+    def faixa(i: int) -> str:
+        if i == 0:
+            return f"até {cortes[0]:.1f}%".replace(".", ",")
+        if i == len(cortes):
+            return f"{cortes[-1]:.1f}% ou mais".replace(".", ",")
+        return f"{cortes[i - 1]:.1f} a {cortes[i]:.1f}%".replace(".", ",")
+
+    itens = "".join(
+        f'''<span style="display:flex;align-items:center;gap:5px">
+             <span style="width:13px;height:13px;border-radius:3px;
+                          border:1px solid {t["border"]};
+                          background:rgb({cor[0]},{cor[1]},{cor[2]})"></span>
+             {faixa(i)}
+           </span>'''
+        for i, cor in enumerate(cores)
+    )
+    return f'''
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+                margin-top:8px;font-size:.76rem;color:{t["text_muted"]}">
+      <span style="font-weight:600">% com 60+</span>{itens}
     </div>
-    """
+    '''

@@ -221,13 +221,18 @@ def test_maior_proporcao_recebe_o_tom_escuro(todas_ufs):
     assert _luminancia(por_uf[maior]) < _luminancia(por_uf[menor])
 
 
-def test_uf_unica_nao_divide_por_zero():
-    """Com um estado só, mínimo e máximo coincidem."""
-    spec = json.loads(mapa.deck(_dados(["PE"]), TEMA).to_json())
+def test_uf_unica_recebe_a_cor_da_sua_classe():
+    """Com um estado só, a cor sai dos cortes fixos — não de um mínimo e um
+    máximo calculados sobre ele mesmo, que não existiriam."""
+    dados = _dados(["PE"])
+    pct = float(dados["pct_idosos"].iloc[0])
+    spec = json.loads(mapa.deck(dados, TEMA).to_json())
     feicoes = spec["layers"][0]["data"]["features"]
     assert len(feicoes) == 1
-    rampa = THEMES["light"]["rampa"]
-    assert feicoes[0]["properties"]["cor"] == mapa._rgb(rampa[len(rampa) // 2])
+    esperada = mapa.cores_das_classes(THEMES["light"]["rampa"])[
+        mapa.classificar(pct, mapa.cortes_quartis())
+    ]
+    assert feicoes[0]["properties"]["cor"] == esperada
 
 
 # ── Conteúdo ─────────────────────────────────────────────────────────────────
@@ -257,11 +262,61 @@ def test_geometria_memoizada_por_recorte():
     assert mapa._geometrias.cache_info().hits == 1
 
 
-def test_legenda_mostra_os_extremos(todas_ufs):
-    dados = _dados(todas_ufs)
-    html = mapa.legenda(dados, TEMA)
-    assert f"{dados['pct_idosos'].min():.1f}%" in html
-    assert f"{dados['pct_idosos'].max():.1f}%" in html
+def test_legenda_mostra_as_faixas_e_nao_os_extremos(todas_ufs):
+    """A legenda anuncia os cortes fixos, não o mínimo e o máximo do recorte.
+
+    Com escala contínua fazia sentido rotular os extremos dos dados. Com
+    classes, o que o leitor precisa saber é onde cada faixa começa — e essa
+    resposta não pode mudar quando ele filtra estados, senão dois mapas
+    deixam de ser comparáveis.
+    """
+    html = mapa.legenda(_dados(todas_ufs), TEMA)
+    for corte in mapa.cortes_quartis():
+        assert f"{corte:.1f}".replace(".", ",") in html
+    assert html.count("<span style=\"width:13px") == mapa.CLASSES
+
+
+# ── Quartis ──────────────────────────────────────────────────────────────────
+
+def test_classificar_respeita_os_cortes():
+    cortes = (10.0, 20.0, 30.0)
+    assert mapa.classificar(9.9, cortes) == 0
+    assert mapa.classificar(10.0, cortes) == 1, "valor igual ao corte sobe"
+    assert mapa.classificar(19.9, cortes) == 1
+    assert mapa.classificar(30.0, cortes) == 3
+    assert mapa.classificar(99.0, cortes) == 3
+
+
+def test_sao_quatro_classes_distintas():
+    cores = mapa.cores_das_classes(THEMES["light"]["rampa"])
+    assert len(cores) == mapa.CLASSES == 4
+    assert len({tuple(c) for c in cores}) == 4
+
+
+def test_cortes_nao_mudam_com_o_filtro(todas_ufs):
+    """A invariante que o filtro não pode quebrar.
+
+    Se os cortes fossem recalculados sobre a seleção, escolher outro conjunto
+    de estados repintaria os que continuam na tela — a cor passaria a
+    descrever a posição do estado no recorte, não a proporção dele.
+    """
+    def cor_de(uf, ufs):
+        dados = _dados(ufs)
+        spec = json.loads(mapa.deck(dados, TEMA).to_json())
+        for f in spec["layers"][0]["data"]["features"]:
+            if f["properties"]["uf"] == uf:
+                return f["properties"]["cor"]
+        raise AssertionError(uf)
+
+    alvo = todas_ufs[3]
+    assert cor_de(alvo, todas_ufs) == cor_de(alvo, todas_ufs[:6])
+
+
+def test_cortes_sao_crescentes_e_plausiveis():
+    c = mapa.cortes_quartis()
+    assert len(c) == mapa.CLASSES - 1
+    assert list(c) == sorted(c)
+    assert 5 < c[0] and c[-1] < 30, c
 
 
 # ── Ilhas oceânicas ──────────────────────────────────────────────────────────
