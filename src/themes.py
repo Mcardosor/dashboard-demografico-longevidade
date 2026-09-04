@@ -120,6 +120,32 @@ def _css(t: dict) -> str:
 
   .stApp {{ background: {t['bg']}; color: {t['text']}; }}
 
+  /* ── O vazio no topo da página ──
+     O Streamlit reserva 6rem acima do conteúdo para um cabeçalho que aqui
+     tem 60px e é transparente — sobravam 36px de nada. Somados aos ghosts
+     abaixo, a barra da marca só começava a 202px do topo.
+
+     3.75rem = a altura exata do cabeçalho. Com os 0.5rem de margem da
+     `.marca-bar`, ela encosta logo abaixo dele sem cobrir o menu ⋮.
+     Embaixo o padrão são 10rem de rodapé morto; 3rem bastam. */
+  .stMainBlockContainer {{ padding-top: 3.75rem !important; padding-bottom: 3rem !important; }}
+
+  /* Containers fantasma: o Streamlit envolve CADA `st.markdown`/`components.html`
+     num bloco que participa do `gap: 1rem` da coluna, mesmo quando o conteúdo
+     é invisível. Três deles (dois `<style>` e o iframe do botão de tema)
+     empurravam a página em 82px.
+
+     O iframe em si já estava escondido, mas o container ganhou `height="50px"`
+     como atributo no Streamlit 1.63 e continuou ocupando o espaço — esconder
+     o filho não encolhe o pai. Por isso a regra mira o container.
+
+     Os dois `components.html` deste painel são só script. Se algum dia um
+     deles desenhar algo, esta regra precisa ser restringida. */
+  [data-testid="stElementContainer"]:has(> iframe[data-testid="stIFrame"]),
+  [data-testid="stElementContainer"]:has([data-testid="stMarkdownContainer"] > style:only-child) {{
+    display: none !important;
+  }}
+
   /* ── Sidebar ── */
   section[data-testid="stSidebar"] > div:first-child {{
     background: {t['sidebar_bg']};

@@ -76,3 +76,29 @@ def test_nao_sobrou_marca_do_cenarios():
         assert "cenarios-bar" not in css, modo
         assert "#2B7BB9" not in css, f"azul do Cenários em {modo}"
         assert "#E07B54" not in css, f"terracota do Cenários em {modo}"
+
+
+def test_topo_da_pagina_nao_reserva_o_padrao_de_6rem():
+    """O Streamlit reserva 6rem acima do conteúdo para um cabeçalho de 60px.
+
+    Sobravam 36px de branco, e a barra da marca começava a 202px do topo.
+    """
+    from src.themes import _css
+
+    for modo, t in THEMES.items():
+        assert "padding-top: 3.75rem" in _css(t), modo
+
+
+def test_containers_so_de_script_nao_ocupam_espaco():
+    """`components.html` e `st.markdown` de `<style>` são invisíveis, mas o
+    container que o Streamlit põe em volta entra no `gap` da coluna.
+
+    O iframe já estava escondido; o pai é que ganhou `height="50px"` no
+    Streamlit 1.63 e continuou empurrando a página.
+    """
+    from src.themes import _css
+
+    for modo, t in THEMES.items():
+        css = _css(t)
+        assert 'stElementContainer"]:has(> iframe' in css, modo
+        assert "style:only-child" in css, modo
