@@ -8,3 +8,7 @@ pytest==8.3.4
 # escrevem data/ufs.geojson; o painel em execução não importa nenhuma das duas.
 geopandas==1.0.1
 topojson==1.9
+
+# Leitura das planilhas do IBGE (scripts/preparar_projecao.py). Roda uma vez
+# por revisão e escreve data/*.parquet; o painel em execução não a importa.
+openpyxl==3.1.5

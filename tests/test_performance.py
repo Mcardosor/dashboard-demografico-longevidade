@@ -41,7 +41,7 @@ TEMA = THEMES["light"]
 
 @pytest.fixture(scope="module")
 def base():
-    ano = data.anos_disponiveis.__wrapped__()[0]
+    ano = data.ano_padrao()  # o ano que o painel abre mostrando
     df_raw = data.carregar_dados.__wrapped__(ano)
     df_evo = data.carregar_evolucao.__wrapped__()
     df_proc, df_idosos = charts.processar_dados(df_raw)

@@ -5,17 +5,17 @@ Visão de ponta a ponta pra quem for rodar, estender ou dar manutenção neste p
 ## Fluxo de dados
 
 ```
-IBGE (Projeções de População 2010-2025)
+IBGE — Projeções da População, revisão 2024 (planilhas do FTP)
+  tab1_idade_simples.xlsx · tab4_indicadores.xlsx
         │
-        │  (pipeline de tratamento NÃO está neste repositório —
-        │   os .parquet em /data já vêm prontos pra uso)
+        │  scripts/preparar_projecao.py  (roda uma vez por revisão)
         ▼
-data/pop_ibge.parquet ──┐
-data/ibge_municipios.parquet ├─► src/data.py::_carregar_base()
-data/ibge_ufs.parquet ──┘        (junta os 3 parquets, normaliza sexo/idade)
+data/pop_uf.parquet ─────────► src/data.py::_carregar_base()
+data/indicadores_uf.parquet ─► src/data.py::carregar_indicadores()
         │
         ▼
-src/data.py (carregar_dados, carregar_evolucao, anos_disponiveis)
+src/data.py (carregar_dados, carregar_evolucao, anos_disponiveis,
+             ano_padrao, esperanca_aos_60; ESTIMATIVA_ATE = 2022)
         │  cache via @st.cache_data / @st.cache_resource
         ▼
 src/charts.py::processar_dados() ──► deriva faixa etária + recorte 60+ por UF
@@ -31,7 +31,17 @@ app.py ──► monta a linha de filtros, chama src/charts.py::fig_*() para cad
 Streamlit renderiza no navegador
 ```
 
-**Limitação conhecida:** o pipeline que transforma os dados brutos do IBGE nos 3 `.parquet` de `data/` não está neste repositório. Pra atualizar os dados (ex: quando o IBGE lançar a projeção de 2026), é preciso reconstruir esse pipeline (fora do escopo deste repo) e substituir os arquivos em `data/`, mantendo o mesmo schema consumido por `_carregar_base()` (colunas: `cod_mun`, `ano`, `idade`, `sexo`, `populacao` em `pop_ibge.parquet`; ver `src/data.py` pros nomes exatos das outras duas tabelas).
+**Atualizar os dados** é rodar `python scripts/preparar_projecao.py <pasta>`
+com as planilhas da revisão nova e commitar os dois parquets. O script filtra
+as UFs (as planilhas trazem Brasil e regiões nas mesmas linhas), descarta
+"Ambos" e lê o cabeçalho de anos com `data_only` (é fórmula). Se a revisão
+mudar o teto de idade (hoje 90+), `IDADE_TOPO` em `src/charts.py` precisa
+acompanhar — `tests/test_numeros.py` avisa. Se mudar a fronteira
+estimativa/projeção (hoje 2022), é `ESTIMATIVA_ATE` em `src/data.py`.
+
+Até 15/set/2026 a base era municipal, 23 MB, produzida por um pipeline fora do
+repositório. Foi trocada pela tab1 do próprio IBGE depois de conferida célula
+a célula — ver [Levantamento das projeções](levantamento-projecoes.md).
 
 ## Módulos
 
@@ -73,8 +83,12 @@ Não há barra lateral: os filtros vivem numa linha no corpo da página.
 
 ## Limitações conhecidas
 
-- Pipeline de dados brutos (IBGE → Parquet) não versionado neste repo (ver seção Fluxo de dados acima).
-- Cobertura de dados: 2010–2025, por UF (não há recorte municipal na visualização, embora `ibge_municipios.parquet` exista na base).
+- Cobertura de dados: 2000–2070, por UF. Não há recorte municipal — o IBGE
+  não projeta município, e a base deixou de tê-lo em 15/set/2026.
+- **De 2023 em diante é projeção**, inclusive o ano em que o painel abre. A
+  fronteira está em `ESTIMATIVA_ATE` e aparece no seletor, no hero e na
+  linha tracejada da evolução. Uma revisão nova do IBGE muda os números
+  projetados; o painel não guarda a revisão anterior.
 - **O tema escuro não recolore os gráficos.** O botão de tema apenas marca
   `data-theme="dark"` no `<html>` e injeta uma folha de CSS por cima; o
   `st.session_state.theme` nunca muda, então `THEMES["dark"]` não chega ao
@@ -95,7 +109,7 @@ chrome --headless=new --disable-gpu --hide-scrollbars --window-size=1440,1600 --
 ```
 
 ```bash
-python -c "from PIL import Image; Image.open('docs/_preview_raw.png').crop((0,52,1440,1540)).save('docs/preview.png', optimize=True)"
+python -c "from PIL import Image; Image.open('docs/_preview_raw.png').crop((0,52,1440,1558)).save('docs/preview.png', optimize=True)"
 ```
 
 **O corte não é firula.** Os 52px de cima são a faixa do cabeçalho do
@@ -103,9 +117,9 @@ Streamlit, onde moram o botão de tema e o menu ⋮ — cromo de navegador, que 
 print de README só ocupa espaço e faz o painel parecer começar com um vazio.
 Cortando ali, a barra roxa da marca vira a primeira linha da imagem.
 
-Embaixo, 1540 é logo depois do divisor que fecha a seção do mapa. Terminar num
+Embaixo, 1558 é logo depois do divisor que fecha a seção do mapa. Terminar num
 divisor é o que evita a imagem cortada no meio de um gráfico. Os divisores
-ficam em **739 · 1532 · 2411 · 3005** com a janela em 1440 de largura —
+ficam em **762 · 1550 · 2429 · 3024** com a janela em 1440 de largura —
 escolha outro se quiser um print mais curto ou mais longo.
 
 **Confira o arquivo antes de commitar.** Duas armadilhas:

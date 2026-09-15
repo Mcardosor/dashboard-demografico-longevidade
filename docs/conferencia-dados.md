@@ -1,5 +1,14 @@
 # Conferência dos números com o IBGE
 
+> **15/set/2026 — a base mudou.** O que está abaixo foi feito sobre a base
+> municipal (2010-2025, idade até 80+). Em 15/set ela foi substituída pela
+> tab1 do próprio IBGE (2000-2070, idade até 90+), conferida célula a célula
+> contra a antiga: 8 células de 69.984 divergem, no máximo 66 pessoas. Com a
+> troca, a diferença de 4 pessoas nos 60+ de 2025 virou zero, a idade média
+> passou a bater no centésimo e a pirâmide ganhou as faixas 80-84 e 85-89.
+> Os valores de referência estão presos em `tests/test_numeros.py`. Ver
+> [Levantamento das projeções](levantamento-projecoes.md).
+
 Feita em 04/set/2026. A pergunta era simples: os números que o painel mostra
 são os do IBGE?
 

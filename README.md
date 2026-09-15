@@ -1,6 +1,6 @@
 # Envelhecimento Populacional no Brasil
 
-Visualização da distribuição etária da população brasileira por estado, com foco no envelhecimento populacional (2010–2025), a partir das Projeções de População do IBGE.
+Visualização da distribuição etária da população brasileira por estado, com foco no envelhecimento populacional, a partir das Projeções da População do IBGE (revisão 2024): **estimativas de 2000 a 2022 e projeções de 2023 a 2070**. O painel diz qual é qual — o ano corrente já é projeção.
 
 ![O painel: barra da marca, KPIs e o mapa em quartis](docs/preview.png)
 
@@ -22,14 +22,16 @@ identidade visual** — marca, paleta roxa e a rampa do mapa vêm do
 
 ## Conteúdo
 
-- **Mapa coroplético em quartis**, com cortes fixos do período — sem basemap,
-  sem fornecedor de ladrilho
+- **Mapa coroplético em quartis**, com cortes fixos sobre 2000-2070 — o mapa
+  escurece década a década. Sem basemap, sem fornecedor de ladrilho
 - **Tabela dos estados mais envelhecidos**, com o valor exato que o mapa não dá
-- **Pirâmide etária** em faixas de 5 anos, por sexo
+- **Pirâmide etária** em faixas de 5 anos até 90+, por sexo
 - **Distribuição por sexo**, geral ou restrita a quem tem 60 anos ou mais
-- **Evolução da população**, 2010–2025
+- **Evolução da população**, 2000–2070: linha sólida até 2022 (estimativa),
+  tracejada de 2023 em diante (projeção), com o pico marcado — o Brasil vira
+  em 2041
 - **Quatro KPIs** com comparativo ao ano anterior: pessoas com 60+, proporção
-  de 60+, índice de envelhecimento e idade média
+  de 60+, índice de envelhecimento e esperança de vida aos 60
 
 O painel fala **"60+"**, não "idosos", em tudo que o leitor vê — ver
 [Documentação dos Gráficos](docs/DOCUMENTACAO_GRAFICOS.md).
@@ -41,6 +43,7 @@ O painel fala **"60+"**, não "idosos", em tudo que o leitor vê — ver
 | [Arquitetura](docs/ARQUITETURA.md) | Fluxo de dados ponta a ponta, módulos, deploy e limitações — comece por aqui |
 | [Documentação dos Gráficos](docs/DOCUMENTACAO_GRAFICOS.md) | Por que cada gráfico existe, como é calculado e o código |
 | [Conferência dos dados](docs/conferencia-dados.md) | Os números batem com o IBGE? Sim — e o que a conferência revelou |
+| [Levantamento das projeções](docs/levantamento-projecoes.md) | O que há nas planilhas do IBGE, a fronteira estimativa/projeção e por que a tab1 virou a base |
 | [Identidade visual](docs/identidade.md) | A paleta roxa do Observatório, de onde veio cada cor e o que reprovou na validação |
 | [Deploy na VM](docs/deploy-vm.md) | Bootstrap na `cenarios-vm`: portas, rota do nginx e a pegadinha do prefixo |
 | [Performance](docs/performance.md) | Linha de base medida, o que foi otimizado e os alvos presos em teste |
@@ -132,16 +135,36 @@ resolução muda conforme a versão do interpretador, e o que vale é a da image
 ## O que o CI cobre
 
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) roda a cada push e PR:
-`ruff check .`, o build da imagem, e um diff entre o `pip freeze` da imagem e o
-lock.
+`ruff check .`, `pytest -m "not tempo"`, o build da imagem, e um diff entre o
+`pip freeze` da imagem e o lock.
 
-**Este painel não tem testes.** O CI pega import quebrado, erro de sintaxe e
-lock que parou de instalar — não pega número errado. Conferir se o painel está
-mostrando o dado certo continua sendo trabalho de olhar o painel.
+Os testes prendem o que foi medido e conferido: payload e enquadramento do
+mapa, cores, identidade, e — em `tests/test_numeros.py` — os totais do IBGE
+para 2010, 2025 e 2070, o pico em 2041, o `e60` do Brasil e o teto de idade
+da pirâmide. O que o CI **não** pega é um gráfico que ficou feio: isso
+continua sendo trabalho de olhar o painel.
 
 ## Dados
 
-Projeções de População do IBGE (2010–2025), por município, faixa etária e sexo. O pipeline de tratamento não está neste repositório — os `.parquet` em `/data` já vêm prontos para uso.
+Projeções da População do IBGE, revisão 2024, por UF, idade simples (0 a 90+)
+e sexo, 2000–2070. Dois parquets em `data/`, gerados por
+`scripts/preparar_projecao.py` a partir das planilhas do FTP do IBGE:
+
+| Arquivo | Origem | Conteúdo |
+|---|---|---|
+| `pop_uf.parquet` (0,9 MB) | `projecoes_2024_tab1_idade_simples.xlsx` | população por `uf`, `ano`, `sexo`, `idade` |
+| `indicadores_uf.parquet` | `projecoes_2024_tab4_indicadores.xlsx` | esperança de vida ao nascer e aos 60, por sexo |
+
+Para atualizar quando o IBGE publicar uma revisão nova:
+
+```bash
+python scripts/preparar_projecao.py <pasta com as planilhas>
+```
+
+Até 15/set/2026 a base era municipal (23 MB) e vinha de um pipeline fora do
+repositório. O painel nunca usou município — todo gráfico soma por UF —, e a
+troca foi conferida célula a célula. Ver
+[Levantamento das projeções](docs/levantamento-projecoes.md).
 
 ## Estrutura
 
@@ -153,10 +176,13 @@ dashboard-demografico/
 │   ├── data.py              # carregamento e cache
 │   ├── themes.py            # tokens de cor dark/light
 │   └── utils.py             # formatação e componentes HTML
+├── scripts/
+│   ├── preparar_projecao.py  # planilhas do IBGE → data/*.parquet
+│   └── preparar_geometria.py # geojson cru → data/ufs.geojson
 ├── data/
-│   ├── pop_ibge.parquet
-│   ├── ibge_municipios.parquet
-│   ├── ibge_ufs.parquet
+│   ├── pop_uf.parquet
+│   ├── indicadores_uf.parquet
+│   ├── ufs.geojson
 │   └── brazil-states.geojson
 └── requirements.txt
 ```

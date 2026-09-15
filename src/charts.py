@@ -2,7 +2,12 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
+from .data import ESTIMATIVA_ATE
 from .utils import H_MEDIUM, H_LARGE, _apply_layout
+
+#: Última idade da base, e balde aberto: 90 é "90 ou mais". A última faixa da
+#: pirâmide é este número seguido de "+".
+IDADE_TOPO = 90
 
 
 def processar_dados(df: pd.DataFrame):
@@ -15,23 +20,20 @@ def processar_dados(df: pd.DataFrame):
     Returns:
         tuple[pd.DataFrame, pd.DataFrame]:
             - `df_proc`: mesma base recebida, com a coluna `faixa_etaria`
-              (bins de 5 em 5 anos, "100+" no topo) adicionada.
+              (bins de 5 em 5 anos, "90+" no topo) adicionada.
             - `df_idosos`: uma linha por UF, com `total`, `idosos` (idade
               >= 60) e `pct_idosos`.
     """
-    # A última faixa é **80+**, e não 80-84 seguida de 85-89, 90-94, 95-99 e
-    # 100+.
+    # A última faixa é **90+**, porque a base termina em 90 e essa idade não é
+    # "quem tem 90": é o balde aberto "90 anos ou mais" da tab1 do IBGE.
     #
-    # A base termina em 80, e essa idade não é "quem tem 80": é o balde aberto
-    # "80 anos ou mais", com 4,96 milhões de pessoas em 2025. Conferido contra
-    # a planilha de idade simples da revisão 2024 do IBGE.
-    #
-    # Com as faixas antigas a pirâmide desenhava esses 4,96 milhões dentro de
-    # "80-84" — 1,8x o valor real da faixa, que é 2,71 milhões — e deixava
-    # 85-89, 90-94, 95-99 e 100+ zeradas, dando a entender que ninguém no
-    # Brasil passa dos 85. Os rótulos afirmavam o que o dado não sustenta.
-    bins   = list(range(0, 81, 5)) + [200]
-    labels = [f"{i}-{i+4}" for i in range(0, 80, 5)] + ["80+"]
+    # A faixa final tem que coincidir com o balde da base. Quando a base
+    # parava em 80 e a pirâmide desenhava até 100+, os 4,96 milhões de 80+
+    # caíam inteiros em "80-84" — 1,8x o valor real — e quatro faixas acima
+    # ficavam zeradas, sugerindo que ninguém no Brasil passa dos 85.
+    # `IDADE_TOPO` em tests/test_numeros.py prende a coincidência.
+    bins   = list(range(0, IDADE_TOPO + 1, 5)) + [200]
+    labels = [f"{i}-{i+4}" for i in range(0, IDADE_TOPO, 5)] + [f"{IDADE_TOPO}+"]
 
     df_proc = df.copy()
     df_proc["faixa_etaria"] = pd.cut(df_proc["idade"], bins=bins, labels=labels, right=False)
@@ -116,12 +118,8 @@ def fig_piramide(df: pd.DataFrame, t: dict) -> go.Figure:
     Returns:
         go.Figure: pirâmide etária com barras opostas.
     """
-    # Termina em "80+" porque a base termina ali — ver `processar_dados`.
-    FAIXAS = [
-        "0-4","5-9","10-14","15-19","20-24","25-29","30-34","35-39",
-        "40-44","45-49","50-54","55-59","60-64","65-69","70-74","75-79",
-        "80+",
-    ]
+    # Termina em "90+" porque a base termina ali — ver `processar_dados`.
+    FAIXAS = [f"{i}-{i+4}" for i in range(0, IDADE_TOPO, 5)] + [f"{IDADE_TOPO}+"]
     agg = df.groupby(["faixa_etaria", "sexo"], observed=False)["populacao"].sum().reset_index()
     agg["faixa_etaria"] = agg["faixa_etaria"].astype(str)
     agg = agg[agg["faixa_etaria"].isin(FAIXAS)]
@@ -164,7 +162,19 @@ def fig_piramide(df: pd.DataFrame, t: dict) -> go.Figure:
 
 
 def fig_evolucao(df_evo: pd.DataFrame, ufs: list, t: dict) -> go.Figure:
-    """Monta a série histórica de população total (2010-2025) em milhões.
+    """Monta a série de população total, 2000-2070, em milhões.
+
+    Duas linhas com a mesma cor e continuidade: **sólida** até o último ano
+    que o IBGE estima (`ESTIMATIVA_ATE`, 2022) e **tracejada** daí em
+    diante, que é projeção. A fronteira é desenhada como faixa vertical
+    rotulada, e não só pela textura da linha, porque tracejado sem legenda
+    lê como estilo.
+
+    A escala do eixo y não começa em zero, de propósito. Somando o país, a
+    curva vai de 174 M (2000) a 220 M (2041) e volta a 199 M (2070) — o
+    pico e a queda são a história, e num eixo desde o zero eles viram uma
+    ondulação de 10% numa linha quase reta. Decisão documentada em
+    docs/DOCUMENTACAO_GRAFICOS.md.
 
     Args:
         df_evo: população por UF e ano (ver `src.data.carregar_evolucao`).
@@ -173,28 +183,58 @@ def fig_evolucao(df_evo: pd.DataFrame, ufs: list, t: dict) -> go.Figure:
         t: dicionário de tema (cores) atual.
 
     Returns:
-        go.Figure: gráfico de linha com marcadores, um ponto por ano.
+        go.Figure: linha sólida (estimativa) + tracejada (projeção).
     """
-    df_f  = df_evo[df_evo["uf"].isin(ufs)].copy()
+    df_f   = df_evo[df_evo["uf"].isin(ufs)]
     df_tot = df_f.groupby("ano")["populacao"].sum().reset_index()
     df_tot["populacao_M"] = df_tot["populacao"] / 1_000_000
 
-    fig = px.line(
-        df_tot, x="ano", y="populacao_M",
-        labels={"ano": "Ano", "populacao_M": "População (milhões)"},
-        markers=True,
-        color_discrete_sequence=[t["accent"]],
+    # O ponto da fronteira entra nas duas séries, para a linha não ter buraco.
+    est  = df_tot[df_tot["ano"] <= ESTIMATIVA_ATE]
+    proj = df_tot[df_tot["ano"] >= ESTIMATIVA_ATE]
+
+    hover = "<b>%{x}</b><br>%{y:.2f}M habitantes<extra>%{fullData.name}</extra>"
+    fig = go.Figure([
+        go.Scatter(
+            x=est["ano"], y=est["populacao_M"], name="Estimativa",
+            mode="lines", line=dict(color=t["accent"], width=2.5),
+            hovertemplate=hover,
+        ),
+        go.Scatter(
+            x=proj["ano"], y=proj["populacao_M"], name="Projeção",
+            mode="lines", line=dict(color=t["accent"], width=2.5, dash="dash"),
+            hovertemplate=hover,
+        ),
+    ])
+
+    # O pico: onde a série vira. É o número que o gráfico existe para mostrar.
+    pico = df_tot.loc[df_tot["populacao_M"].idxmax()]
+    fig.add_annotation(
+        x=pico["ano"], y=pico["populacao_M"],
+        text=f"pico em {int(pico['ano'])}: {pico['populacao_M']:.1f} M",
+        showarrow=True, arrowhead=0, arrowcolor=t["text_muted"],
+        ax=0, ay=-32, font=dict(size=11, color=t["text"]),
     )
-    fig.update_traces(
-        line_width=2.5,
-        marker=dict(size=7, color=t["accent"]),
-        hovertemplate="<b>%{x}</b><br>%{y:.2f}M habitantes<extra></extra>",
+
+    fig.add_vline(
+        x=ESTIMATIVA_ATE + 0.5, line_width=1, line_dash="dot", line_color=t["text_muted"],
     )
-    from .utils import H_MEDIUM
+    fig.add_annotation(
+        x=ESTIMATIVA_ATE + 0.5, y=1, yref="paper", yanchor="top", xanchor="left",
+        text="  projeção do IBGE →", showarrow=False,
+        font=dict(size=11, color=t["text_muted"]),
+    )
+
     _apply_layout(fig, t, H_MEDIUM)
     fig.update_layout(
-        xaxis=dict(title="", tickmode="linear", dtick=1, tickfont=dict(color=t["text_muted"])),
-        yaxis=dict(title=dict(text="Milhões de habitantes", font=dict(color=t["text"])), tickfont=dict(color=t["text_muted"])),
-        margin=dict(l=10, r=10, t=20, b=10),
+        xaxis=dict(title="", tickmode="linear", dtick=5, tickfont=dict(color=t["text_muted"])),
+        yaxis=dict(
+            title=dict(text="Milhões de habitantes", font=dict(color=t["text"])),
+            tickfont=dict(color=t["text_muted"]),
+        ),
+        legend=dict(orientation="h", y=-0.15, x=0, font=dict(color=t["text"])),
+        hovermode="x unified",
+        # r=36: o rótulo "2070" do último tick cabe; com 10 ele era cortado.
+        margin=dict(l=10, r=36, t=20, b=10),
     )
     return fig

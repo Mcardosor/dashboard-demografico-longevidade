@@ -2,8 +2,8 @@
 app.py — Dashboard Demográfico Longevidade (Streamlit + Plotly + pydeck).
 
 Distribuição etária, proporção de pessoas com 60 anos ou mais e evolução
-populacional por estado, a partir das Projeções de População do IBGE
-(2010-2025).
+populacional por estado, a partir das Projeções da População do IBGE,
+revisão 2024: estimativas de 2000 a 2022 e projeções de 2023 a 2070.
 
 O coroplético é o único gráfico fora do Plotly: mora em `src/mapa.py`, é
 desenhado com pydeck e não usa basemap. O porquê está em docs/performance.md.
@@ -14,7 +14,8 @@ import streamlit.components.v1  # noqa: F401  (usado como st.components.v1)
 
 from src.themes import (THEMES, _css, inject_toggle, marca_html, ROXO_MARCA,
                         script_travar_zoom)
-from src.data import anos_disponiveis, carregar_dados, carregar_evolucao, carregar_geojson
+from src.data import (anos_disponiveis, ano_padrao, carregar_dados, carregar_evolucao,
+                      carregar_geojson, eh_projecao, esperanca_aos_60)
 from src.charts import processar_dados, fig_pizza, fig_piramide, fig_evolucao
 from src import mapa
 from src.utils import PLOTLY_CFG, REGIOES, _fmt, _delta_html, kpi_card, section_header, html_top5
@@ -39,9 +40,7 @@ def _iniciar_warmup():
             from src.data import carregar_dados, carregar_evolucao, carregar_geojson
             carregar_geojson()
             carregar_evolucao()
-            anos = anos_disponiveis()
-            if anos:
-                carregar_dados(anos[0])
+            carregar_dados(ano_padrao())
         except Exception:
             pass
     threading.Thread(target=_bg, daemon=True).start()
@@ -62,7 +61,7 @@ _anos   = anos_disponiveis()
 
 # ── Dados carregados antes da sidebar ─────────────────────────────────────────
 # Carrega com ano padrão para ter ufs_disponiveis na sidebar
-_ano_default = st.session_state.get("ano_sel", _anos[0])
+_ano_default = st.session_state.get("ano_sel", ano_padrao())
 _df_default  = carregar_dados(_ano_default)
 _ufs_disp    = sorted(_df_default["uf"].unique().tolist())
 
@@ -105,8 +104,18 @@ _hero = st.container()  # reservado: o título vai acima dos filtros, mas
 
 col_ano, col_recorte, col_estados = st.columns([1, 1.2, 2.4], gap="medium")
 
+# O rótulo diz o que o ano é. 2000-2022 são estimativas do IBGE; de 2023 em
+# diante, projeção — e o painel abre num ano projetado (o corrente), então
+# a diferença tem que estar onde o leitor escolhe.
+def _rotulo_ano(a: int) -> str:
+    return f"{a} · projeção" if eh_projecao(a) else str(a)
+
+
 with col_ano:
-    ano_sel = st.selectbox("Ano de referência", options=_anos, index=0, key="ano_sel")
+    ano_sel = st.selectbox(
+        "Ano de referência", options=_anos, index=_anos.index(ano_padrao()),
+        format_func=_rotulo_ano, key="ano_sel",
+    )
     ano_ant = _anos[_anos.index(ano_sel) + 1] if _anos.index(ano_sel) + 1 < len(_anos) else None
 
 with col_recorte:
@@ -147,13 +156,13 @@ df_filt    = df_proc[df_proc["uf"].isin(ufs_sel)]
 df_id_filt = df_idosos[df_idosos["uf"].isin(ufs_sel)]
 
 def _indicadores(d):
-    """Os quatro números dos KPIs, para um recorte de UFs e um ano.
+    """Os números dos KPIs, para um recorte de UFs e um ano.
 
     Devolve zeros num recorte vazio em vez de dividir por zero.
     """
     total = int(d["populacao"].sum())
     if not total:
-        return dict(total=0, n60=0, pct60=0.0, indice=0.0, idade=0.0)
+        return dict(total=0, n60=0, pct60=0.0, indice=0.0)
     n60 = int(d[d["idade"] >= 60]["populacao"].sum())
     criancas = int(d[d["idade"] <= 14]["populacao"].sum())
     return dict(
@@ -164,7 +173,6 @@ def _indicadores(d):
         # 0 a 14 anos. É o indicador clássico da transição demográfica, e o
         # que mais se move aqui — 43 em 2010, 85 em 2025.
         indice=(n60 / criancas * 100) if criancas else 0.0,
-        idade=(d["idade"] * d["populacao"]).sum() / total,
     )
 
 
@@ -172,8 +180,10 @@ atual = _indicadores(df_filt)
 anterior = (
     _indicadores(df_proc_ant[df_proc_ant["uf"].isin(ufs_sel)])
     if df_proc_ant is not None
-    else dict(total=0, n60=0, pct60=0.0, indice=0.0, idade=0.0)
+    else dict(total=0, n60=0, pct60=0.0, indice=0.0)
 )
+atual["e60"] = esperanca_aos_60(ufs_sel, ano_sel)
+anterior["e60"] = esperanca_aos_60(ufs_sel, ano_ant) if ano_ant else 0.0
 pop_filt = atual["total"]
 
 # ── Hero ──────────────────────────────────────────────────────────────────────
@@ -187,13 +197,14 @@ _hero.markdown(f"""
   <h1 class="hero-title">Envelhecimento Populacional no Brasil</h1>
   <p class="hero-subtitle">
     Distribuição etária, proporção de pessoas com 60 anos ou mais e
-    evolução histórica da população, por estado. Fonte: Projeções de
-    População do IBGE.
+    evolução da população por estado, de 2000 a 2070. Fonte: Projeções da
+    População do IBGE, revisão 2024 — estimativas até 2022, projeções a
+    partir de 2023.
   </p>
   <div class="hero-badges">
     <span class="hero-badge accent"><span class="dot"></span>{_label_ufs}</span>
     <span class="hero-badge success"><span class="dot"></span>{_fmt(pop_filt)} pessoas</span>
-    <span class="hero-badge"><span class="dot"></span>IBGE · {ano_sel}</span>
+    <span class="hero-badge"><span class="dot"></span>IBGE · {ano_sel}{" · projeção" if eh_projecao(ano_sel) else ""}</span>
   </div>
 </div>
 """, unsafe_allow_html=True)
@@ -208,6 +219,11 @@ _hero.markdown(f"""
 # 0,16 ponto em quinze anos. O "▲ 0,0% vs ano anterior" não era do ano, era
 # do indicador — e proporção de mulheres na população total não fala de
 # envelhecimento. Entrou o índice de envelhecimento, que dobrou no período.
+#
+# Saiu também "Idade média", pela esperança de vida aos 60. A idade média
+# fala da população inteira; um painel sobre 60+ precisa do número que fala
+# do seu público — quantos anos, em média, ainda vive quem chegou aos 60. É
+# o indicador oficial do IBGE (tab4), não uma conta nossa.
 kpi_items = [
     ("🧓", "Pessoas com 60+", _fmt(atual["n60"]),
      f"de {_fmt(atual['total'])} habitantes",
@@ -218,9 +234,9 @@ kpi_items = [
     ("⚖️", "Índice de envelhecimento", f"{atual['indice']:.0f}",
      "60+ para cada 100 crianças (0–14)",
      _delta_html(atual["indice"], anterior["indice"])),
-    ("📅", "Idade média", f"{atual['idade']:.1f} anos",
-     "média ponderada",
-     _delta_html(atual["idade"], anterior["idade"])),
+    ("🕊️", "Esperança de vida aos 60", f"+{atual['e60']:.1f} anos",
+     "anos que ainda vive quem chega aos 60",
+     _delta_html(atual["e60"], anterior["e60"])),
 ]
 
 cols = st.columns(4)
@@ -280,8 +296,9 @@ st.divider()
 # Ocupa a linha inteira desde que o ranking saiu. Ele mostrava a mesma
 # proporção por UF que o mapa (01) e a tabela (02) — o mesmo número em três
 # formas, e era o que fazia os títulos soarem repetidos.
-st.markdown(section_header("05", "Evolução populacional — 2010 a 2025",
-    "Total de habitantes nos estados selecionados ao longo dos anos."), unsafe_allow_html=True)
+st.markdown(section_header("05", "Evolução populacional — 2000 a 2070",
+    "Total de habitantes nos estados selecionados. Linha sólida: estimativa do IBGE "
+    "(até 2022). Tracejada: projeção da revisão 2024."), unsafe_allow_html=True)
 st.plotly_chart(fig_evolucao(df_evo, ufs_sel, t), use_container_width=True, config=PLOTLY_CFG)
 
 st.divider()

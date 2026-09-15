@@ -75,7 +75,7 @@ def _payload_kb(fig) -> float:
 
 
 def main() -> None:
-    ano = _sem_cache(data.anos_disponiveis)()[0]
+    ano = data.ano_padrao()
     geojson = _sem_cache(data.carregar_geojson)()
     df_raw = _sem_cache(data.carregar_dados)(ano)
     df_evo = _sem_cache(data.carregar_evolucao)()

@@ -9,6 +9,14 @@ docker run --rm -v "$PWD:/app" -w /app demografico:base python -m scripts.medir_
 Mediana de 5 execuções, em milissegundos, **sem** o cache do Streamlit.
 Ano de referência 2025.
 
+> **15/set/2026 — a base mudou e o custo de carga caiu 128×.** A base
+> municipal (23 MB, 14,4 milhões de linhas) foi trocada pela tab1 do IBGE
+> por UF (0,9 MB, 349 mil linhas). `_carregar_base` foi de **5.770 ms para
+> 45 ms**; a suíte de testes, de 56 s para 3,5 s. O primeiro acesso do
+> processo, que pagava 6-8 s lendo parquet, deixou de existir como evento.
+> O resto desta página é anterior à troca e continua valendo para o que
+> mede: figuras e payload, que não dependem do tamanho da base.
+
 ## Camada de dados
 
 | Operação | Mediana | Pior |

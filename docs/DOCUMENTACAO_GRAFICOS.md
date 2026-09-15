@@ -11,22 +11,37 @@ Por que cada gráfico existe, como é calculado e onde está o código.
 **Código:** `src/mapa.py::deck()`, com a legenda em `src/mapa.py::legenda()`
 
 **Escala em quartis, com cortes fixos.** O mapa tem quatro classes, e os
-cortes (9,5 / 11,8 / 13,8%) são calculados **uma vez sobre todos os anos e
-todas as UFs** — não por ano e não sobre o filtro.
+cortes (11,4 / 19,7 / 29,9%) são calculados **uma vez sobre todos os anos
+(2000-2070) e todas as UFs** — não por ano e não sobre o filtro.
 
 Por ano não serviria: quartil é medida relativa e sempre põe um quarto das
-UFs em cada classe. Medido, dá 7/6/7/7 em 2010 e 7/6/7/7 em 2025 — os dois
-mapas sairiam iguais e o envelhecimento do país ficaria invisível. Com corte
-fixo, 2010 não tem nenhuma UF na classe mais alta e 2025 tem dezoito.
+UFs em cada classe. O mapa de 2010 e o de 2050 sairiam iguais e o
+envelhecimento do país ficaria invisível. Com corte fixo o mapa escurece
+década a década — é o que ele existe para mostrar.
+
+**Os cortes foram redefinidos em 15/set/2026**, quando a base passou de
+2010-2025 para 2000-2070. A proporção de 60+ vai de 4% a 40% no período, e
+quatro cortes que cubram tudo isso separam pouco dentro de um ano. As três
+alternativas, medidas (UFs por classe, da mais clara à mais escura):
+
+| Cortes | 2010 | 2025 | 2040 | 2050 | 2070 |
+|---|---|---|---|---|---|
+| fixos em 2010-2025 (antigos) | 13/11/3/0 | 2/3/4/18 | 0/0/0/27 | 0/0/0/27 | 0/0/0/27 |
+| **fixos em 2000-2070 (atuais)** | 23/4/0/0 | 4/22/1/0 | 0/6/21/0 | 0/0/17/10 | 0/0/0/27 |
+| por ano | 7/7/7/6 sempre | | | | |
+
+Os antigos pintavam 2040 em diante inteiro na classe mais escura: três décadas
+de mapa igual. Os atuais perdem contraste em 2025 (22 UFs numa classe) em
+troca de o mapa continuar mudando até 2070. A tabela 02, ao lado, dá o valor
+exato de cada UF no ano — é ela que separa o que o mapa junta.
 
 Sobre o filtro, muito menos: recalcular sobre os estados selecionados faria
 os sobreviventes mudarem de cor a cada filtro, e a cor passaria a descrever a
 posição do estado no recorte em vez da proporção dele. Preso em
 `test_cortes_nao_mudam_com_o_filtro`.
 
-O custo assumido é que em 2025 dois terços das UFs caem na classe mais alta —
-o mapa perde distinção dentro do ano atual em troca de ser comparável entre
-anos.
+O custo assumido é o da tabela acima: contraste dentro de um ano trocado
+por comparabilidade entre anos.
 
 **A roda do mouse não dá zoom.** Rolar a página com o cursor sobre o mapa
 aplicava zoom e desenquadrava — e o mapa ocupa meia tela, então acontecia o
@@ -75,23 +90,42 @@ reconhecível do DF por um círculo — descaracterizava o mapa sem necessidade.
 
 ## 04 · Pirâmide etária
 
-**A última faixa é "80+", e não 100+.** A base termina num balde aberto aos 80
-anos, com 4,96 milhões de pessoas em 2025. Enquanto a pirâmide desenhava
-faixas até 100+, todo esse contingente caía em "80-84" — 1,8x o valor real —
-e as faixas acima ficavam zeradas, sugerindo que ninguém passa dos 85. Ver
+**A última faixa é "90+", porque a base termina num balde aberto aos 90.** A
+faixa final tem que coincidir com o balde da base, e `IDADE_TOPO` em
+`src/charts.py` prende isso. A lição veio da base anterior, que parava em 80:
+enquanto a pirâmide desenhava faixas até 100+, os 4,96 milhões de 80+ caíam
+inteiros em "80-84" — 1,8x o valor real — e as faixas acima ficavam zeradas,
+sugerindo que ninguém passa dos 85. Ver
 [Conferência dos dados](conferencia-dados.md).
 
 **Por quê:** visão clássica de demografia — a forma da pirâmide (base larga vs. topo largo) indica se a população está envelhecendo ou é predominantemente jovem.
 
-**Como é calculado:** `processar_dados()` cria faixas etárias de 5 em 5 anos (`0-4`, `5-9`, ..., `100+`). O gráfico plota homens como valores negativos e mulheres como positivos, convenção padrão de pirâmide etária, pra ficarem em lados opostos do eixo zero.
+**Como é calculado:** `processar_dados()` cria faixas etárias de 5 em 5 anos (`0-4`, `5-9`, ..., `85-89`, `90+`). O gráfico plota homens como valores negativos e mulheres como positivos, convenção padrão de pirâmide etária, pra ficarem em lados opostos do eixo zero.
 
 **Código:** `src/charts.py::fig_piramide()`
 
-## 05 · Evolução populacional (2010–2025)
+## 05 · Evolução populacional (2000–2070)
 
-**Por quê:** tendência histórica da população total dos estados selecionados, complementando o retrato de um único ano dado pelos outros gráficos.
+**Por quê:** é o único gráfico do painel que mostra **para onde** a população
+vai, e a projeção do IBGE conta uma história que nenhum retrato de um ano
+conta: o Brasil cresce até **2041** (220,4 milhões) e chega a 2070 com menos
+gente do que tem hoje (199,2 milhões). Cada UF vira num ano: RS e AL em
+2026, RJ em 2027, SP em 2036 — e MT ainda cresce em 2070.
 
 **Como é calculado:** `src/data.py::carregar_evolucao()` agrega população total por UF e ano (cacheado como recurso, independente do filtro de ano ativo). `fig_evolucao()` soma só as UFs selecionadas e converte para milhões de habitantes.
+
+**Duas linhas, uma fronteira.** Sólida até 2022, que é o último ano que o
+IBGE classifica como estimativa; tracejada de 2023 em diante, que é
+projeção. A fronteira aparece como linha vertical rotulada — tracejado sem
+legenda lê como estilo, não como significado. O ponto de 2022 entra nas duas
+séries para a linha não ter buraco. Antes da troca de base o gráfico ia até
+2025 em linha sólida, apresentando três anos de projeção como se fossem
+contagem.
+
+**O eixo y não começa em zero, de propósito.** Somando o país a série vai de
+174 M a 220 M e volta a 199 M. Num eixo desde o zero isso é uma ondulação de
+10% numa linha quase reta, e o pico — que é a história — some. O pico vem
+anotado com ano e valor, para o leitor não ter que procurá-lo.
 
 **Código:** `src/charts.py::fig_evolucao()`
 
@@ -107,9 +141,15 @@ aparece.
 | **Pessoas com 60+** | Contagem absoluta; o total do país vai no subtítulo, como denominador |
 | **Proporção de 60+** | A mesma contagem sobre a população total |
 | **Índice de envelhecimento** | Pessoas de 60+ para cada 100 crianças de 0 a 14 anos |
-| **Idade média** | Média ponderada pela população de cada idade |
+| **Esperança de vida aos 60** | Anos que, em média, ainda vive quem chegou aos 60. Valor oficial do IBGE (`e60`, tab4), não uma conta nossa; para um recorte de UFs, média ponderada pela população de 60+ de cada uma — reproduz o valor oficial do Brasil a 0,02 ano |
 
-### Dois cards que saíram, e por quê
+### Três cards que saíram, e por quê
+
+**"Idade média"** saiu em 15/set/2026 pela esperança de vida aos 60. Não
+estava errada — com a base até 90+ ela até passou a bater com o IBGE no
+centésimo. Mas fala da população inteira; um painel sobre 60+ precisa do
+número que fala do seu público. O `e60` vai de 21,6 (AL) a 24,5 anos (DF) em
+2025, e é a única medida de *longevidade* propriamente dita no painel.
 
 **"Proporção feminina"** mostrava 51,2% de mulheres na população total. Dois
 problemas: não fala de envelhecimento — é fato demográfico geral — e é
