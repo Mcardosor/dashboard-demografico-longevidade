@@ -4,7 +4,7 @@ A base é a tab1 das Projeções da População do IBGE, revisão 2024, lida por
 `scripts/preparar_projecao.py`. Os números abaixo são os da planilha e das
 Estimativas de População 2025 do Diário Oficial — conferidos em 04/set/2026
 (base municipal antiga) e reconferidos em 15/set/2026 (base atual). Ver
-docs/conferencia-dados.md e docs/levantamento-projecoes.md.
+docs/historico/conferencia-dados.md e docs/historico/levantamento-projecoes.md.
 
 Estes testes não baixam nada: prendem os valores de referência no código,
 para que uma regeração dos parquets que os mude seja notada.

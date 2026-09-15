@@ -58,7 +58,7 @@ def _carregar_base() -> pd.DataFrame:
     somava por UF antes de desenhar — o município era peso morto. Esta tem
     349 mil linhas e 0,9 MB para os mesmos números: conferido célula a célula
     em 2010-2025, 8 células de 69.984 divergem, no máximo 66 pessoas
-    (arredondamento de município para UF). Ver docs/levantamento-projecoes.md.
+    (arredondamento de município para UF). Ver docs/historico/levantamento-projecoes.md.
 
     Returns:
         pd.DataFrame: colunas `uf`, `ano`, `idade`, `sexo` ("M"/"F"),

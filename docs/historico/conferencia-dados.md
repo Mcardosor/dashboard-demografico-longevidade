@@ -85,4 +85,4 @@ ele que define as faixas da pirâmide.
 A planilha do IBGE traz idade simples **até 90+**, contra os 80+ da nossa base.
 Trocar a origem dos parquets por ela daria uma pirâmide com duas faixas a mais
 (80-84, 85-89) e uma idade média mais fiel. Exige mexer no pipeline de dados,
-que não está neste repositório — ver [Arquitetura](ARQUITETURA.md).
+que não está neste repositório — ver [Arquitetura](../ARQUITETURA.md).

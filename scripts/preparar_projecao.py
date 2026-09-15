@@ -18,7 +18,7 @@ usou município: todo gráfico soma por UF antes de desenhar. A base municipal
 tinha 14,4 milhões de linhas e 23 MB para produzir os mesmos números que a
 tab1 produz com 350 mil linhas — e a tab1 ainda vai de 2000 a 2070 e conta a
 idade até 90+, contra 2010-2025 e 80+. A conferência que fundamenta a troca
-está em docs/levantamento-projecoes.md.
+está em docs/historico/levantamento-projecoes.md.
 
 Três cuidados que a planilha exige, e que este script cumpre:
 

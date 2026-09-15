@@ -3,8 +3,8 @@
 > **Decisão (15/set/2026): a tab1 virou a base do painel.** Não uma camada
 > colada na evolução — a fonte de tudo. O que está abaixo é o levantamento
 > que fundamentou isso; o que foi feito está no commit que o acompanha, e o
-> resultado em [Arquitetura](ARQUITETURA.md) e
-> [Documentação dos gráficos](DOCUMENTACAO_GRAFICOS.md).
+> resultado em [Arquitetura](../ARQUITETURA.md) e
+> [Documentação dos gráficos](../DOCUMENTACAO_GRAFICOS.md).
 >
 > Das decisões pendentes listadas no fim: o eixo é 2000-2070 inteiro, com a
 > fronteira marcada; a escala não começa em zero; o `e60` substituiu a
@@ -16,7 +16,7 @@ arquivos do IBGE, o que serve ao painel, e onde a emenda com o dado atual
 pode dar errado.
 
 Arquivos em `C:\Users\Cenarios-Matheus\Desktop\IBGE\PROJECAO_DA_POPULACAO_2024\`
-(fora do repositório, como o pipeline dos parquets — ver [Arquitetura](ARQUITETURA.md)).
+(fora do repositório, como o pipeline dos parquets — ver [Arquitetura](../ARQUITETURA.md)).
 
 ## A descoberta que muda o desenho
 

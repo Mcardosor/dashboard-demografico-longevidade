@@ -42,10 +42,9 @@ O painel fala **"60+"**, não "idosos", em tudo que o leitor vê — ver
 
 | Documento | Descrição |
 |---|---|
-| [Arquitetura](docs/ARQUITETURA.md) | Fluxo de dados ponta a ponta, módulos, deploy e limitações — comece por aqui |
+| [Metodologia](docs/metodologia.md) | **Comece por aqui:** de onde vem cada número, como é calculado e o que ele não diz |
+| [Arquitetura](docs/ARQUITETURA.md) | Fluxo de dados ponta a ponta, módulos, deploy e limitações |
 | [Documentação dos Gráficos](docs/DOCUMENTACAO_GRAFICOS.md) | Por que cada gráfico existe, como é calculado e o código |
-| [Conferência dos dados](docs/conferencia-dados.md) | Os números batem com o IBGE? Sim — e o que a conferência revelou |
-| [Levantamento das projeções](docs/levantamento-projecoes.md) | O que há nas planilhas do IBGE, a fronteira estimativa/projeção e por que a tab1 virou a base |
 | [Identidade visual](docs/identidade.md) | A paleta roxa do Observatório, de onde veio cada cor e o que reprovou na validação |
 | [Deploy na VM](docs/deploy-vm.md) | Bootstrap na `cenarios-vm`: portas, rota do nginx e a pegadinha do prefixo |
 | [Performance](docs/performance.md) | Linha de base medida, o que foi otimizado e os alvos presos em teste |
@@ -166,7 +165,7 @@ python scripts/preparar_projecao.py <pasta com as planilhas>
 Até 15/set/2026 a base era municipal (23 MB) e vinha de um pipeline fora do
 repositório. O painel nunca usou município — todo gráfico soma por UF —, e a
 troca foi conferida célula a célula. Ver
-[Levantamento das projeções](docs/levantamento-projecoes.md).
+[Levantamento das projeções](docs/historico/levantamento-projecoes.md).
 
 ## Estrutura
 

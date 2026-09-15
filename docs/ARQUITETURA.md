@@ -41,7 +41,7 @@ estimativa/projeção (hoje 2022), é `ESTIMATIVA_ATE` em `src/data.py`.
 
 Até 15/set/2026 a base era municipal, 23 MB, produzida por um pipeline fora do
 repositório. Foi trocada pela tab1 do próprio IBGE depois de conferida célula
-a célula — ver [Levantamento das projeções](levantamento-projecoes.md).
+a célula — ver [Levantamento das projeções](historico/levantamento-projecoes.md).
 
 ## Módulos
 

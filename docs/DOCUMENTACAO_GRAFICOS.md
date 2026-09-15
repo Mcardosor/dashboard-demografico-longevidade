@@ -121,7 +121,7 @@ faixa final tem que coincidir com o balde da base, e `IDADE_TOPO` em
 enquanto a pirâmide desenhava faixas até 100+, os 4,96 milhões de 80+ caíam
 inteiros em "80-84" — 1,8x o valor real — e as faixas acima ficavam zeradas,
 sugerindo que ninguém passa dos 85. Ver
-[Conferência dos dados](conferencia-dados.md).
+[Conferência dos dados](historico/conferencia-dados.md).
 
 **Por quê:** visão clássica de demografia — a forma da pirâmide (base larga vs. topo largo) indica se a população está envelhecendo ou é predominantemente jovem.
 
