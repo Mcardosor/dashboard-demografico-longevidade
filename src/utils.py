@@ -109,13 +109,15 @@ def section_header(num: str, title: str, caption: str = "") -> str:
     {cap}"""
 
 
-def html_top5(df, t: dict) -> str:
+def html_top5(df, t: dict, destaque: str | None = None) -> str:
     """Monta a tabela HTML dos estados com maior proporção de pessoas 60+.
 
     Args:
         df: DataFrame já ordenado e formatado, com colunas `UF`,
             `% 60+` e `Pessoas 60+` (strings prontas para exibição).
         t: dicionário de tema (cores) atual, ver `src.themes.THEMES`.
+        destaque: sigla da UF em foco; a linha dela ganha fundo, para a
+            tabela acompanhar o clique no mapa.
 
     Returns:
         str: HTML da tabela, pronto para `unsafe_allow_html`.
@@ -123,8 +125,9 @@ def html_top5(df, t: dict) -> str:
     rows = ""
     medals = [f"{i}º" for i in range(1, len(df) + 1)]
     for i, (_, row) in enumerate(df.iterrows()):
+        fundo = f"background:{t['hero_bg']};" if row['UF'] == destaque else ""
         rows += f"""
-        <tr style="border-bottom:1px solid {t['border']}">
+        <tr style="border-bottom:1px solid {t['border']};{fundo}">
           <td style="padding:8px 10px;color:{t['text_muted']};font-size:.8rem">{medals[i]}</td>
           <td style="padding:8px 10px;font-weight:700;color:{t['accent']}">{row['UF']}</td>
           <td style="padding:8px 10px;text-align:right;font-weight:600;color:{t['text_title']}">{row['% 60+']}</td>

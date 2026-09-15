@@ -23,7 +23,9 @@ identidade visual** — marca, paleta roxa e a rampa do mapa vêm do
 ## Conteúdo
 
 - **Mapa coroplético em quartis**, com cortes fixos sobre 2000-2070 — o mapa
-  escurece década a década. Sem basemap, sem fornecedor de ladrilho
+  escurece década a década. Sem basemap, sem fornecedor de ladrilho.
+  **Clicar num estado põe o painel inteiro nos dados dele**; clicar de novo
+  solta
 - **Tabela dos estados mais envelhecidos**, com o valor exato que o mapa não dá
 - **Pirâmide etária** em faixas de 5 anos até 90+, por sexo
 - **Distribuição por sexo**, geral ou restrita a quem tem 60 anos ou mais

@@ -376,6 +376,17 @@ def _escalar(geometria: dict, fator: float, centro: tuple[float, float]) -> dict
     return {"type": geometria["type"], "coordinates": andar(geometria["coordinates"])}
 
 
+#: Ids das camadas clicáveis. O Streamlit devolve a seleção chaveada por id
+#: de camada; sem id o pydeck inventa um a cada render e a chave muda.
+CAMADA_UFS = "ufs"
+CAMADA_AMPLIADAS = "ufs-ampliadas"
+
+#: Opacidade das UFs fora de foco quando há uma em foco (255 é opaco). 70 as
+#: apagava: sobrava um vulto e o mapa deixava de servir para escolher outra.
+#: Em 150 elas ficam legíveis — cor e fronteira — e a em foco ainda salta.
+ALFA_FORA_DE_FOCO = 150
+
+
 def _camada_ampliada(pydeck_mod, feicoes, quadro, t):
     """Redesenha, ampliadas, as UFs pequenas demais para o ponteiro acertar.
 
@@ -408,6 +419,7 @@ def _camada_ampliada(pydeck_mod, feicoes, quadro, t):
 
     return pydeck_mod.Layer(
         "GeoJsonLayer",
+        id=CAMADA_AMPLIADAS,
         data={"type": "FeatureCollection", "features": ampliadas},
         stroked=True,
         filled=True,
@@ -419,7 +431,37 @@ def _camada_ampliada(pydeck_mod, feicoes, quadro, t):
     )
 
 
-def deck(df_idosos: pd.DataFrame, t: dict) -> pydeck.Deck:
+
+def uf_selecionada(evento) -> str | None:
+    """A UF clicada no mapa, a partir do evento de seleção do Streamlit.
+
+    `st.pydeck_chart(..., on_select="rerun", selection_mode="single-object")`
+    devolve `{"selection": {"indices": {...}, "objects": {camada: [obj]}}}`.
+    Lê a UF do objeto, não do índice: o índice é a posição na camada e muda
+    quando o recorte muda; a sigla não.
+
+    Args:
+        evento: o retorno de `st.pydeck_chart` ou o valor em
+            `st.session_state[key]` — o mesmo dicionário.
+
+    Returns:
+        str | None: sigla da UF clicada, ou None se nada está selecionado.
+    """
+    if not evento:
+        return None
+    try:
+        objetos = evento["selection"]["objects"]
+    except (KeyError, TypeError):
+        return None
+    for camada in (CAMADA_UFS, CAMADA_AMPLIADAS):
+        for obj in objetos.get(camada) or []:
+            uf = (obj.get("properties") or {}).get("uf") or obj.get("uf")
+            if uf:
+                return str(uf)
+    return None
+
+
+def deck(df_idosos: pd.DataFrame, t: dict, foco: str | None = None) -> pydeck.Deck:
     """Monta o mapa coroplético das UFs presentes em `df_idosos`.
 
     Args:
@@ -427,12 +469,18 @@ def deck(df_idosos: pd.DataFrame, t: dict) -> pydeck.Deck:
             `total` (ver `src.charts.processar_dados`), já filtrado pela
             seleção de estados.
         t: dicionário de tema (cores) atual.
+        foco: sigla de uma UF do recorte que está em foco (clicada). Ela fica
+            com a cor cheia e contorno grosso; as outras esmaecem. O
+            enquadramento **não** muda — o mapa continua sendo o controle
+            para escolher outra, e para isso as outras precisam estar lá.
 
     Returns:
         pydeck.Deck: mapa sem basemap, enquadrado nas UFs recebidas.
     """
     ufs = tuple(df_idosos["uf"])
     geometrias = _geometrias(ufs)
+    if foco not in ufs:
+        foco = None
 
     rampa = tuple(t.get("rampa", RAMPA))
     cores = cores_das_classes(rampa)
@@ -441,7 +489,9 @@ def deck(df_idosos: pd.DataFrame, t: dict) -> pydeck.Deck:
     feicoes = []
     for geometria, (_, linha) in zip(geometrias, df_idosos.iterrows()):
         pct = float(linha["pct_idosos"])
-        cor = cores[classificar(pct, cortes)]
+        cor = list(cores[classificar(pct, cortes)])
+        if foco and linha["uf"] != foco:
+            cor = cor + [ALFA_FORA_DE_FOCO]
         feicoes.append({
             "type": "Feature",
             "geometry": geometria,
@@ -456,6 +506,7 @@ def deck(df_idosos: pd.DataFrame, t: dict) -> pydeck.Deck:
 
     camada = pydeck.Layer(
         "GeoJsonLayer",
+        id=CAMADA_UFS,
         data={"type": "FeatureCollection", "features": feicoes},
         stroked=True,
         filled=True,
@@ -474,6 +525,21 @@ def deck(df_idosos: pd.DataFrame, t: dict) -> pydeck.Deck:
     ampliadas = _camada_ampliada(pydeck, feicoes, quadro, t)
     if ampliadas is not None:
         camadas.append(ampliadas)
+
+    if foco:
+        # Contorno grosso só na UF em foco, por cima de tudo. Não é clicável:
+        # o clique atravessa para a camada de baixo, que é a que seleciona.
+        contorno = [f for f in feicoes if f["properties"]["uf"] == foco]
+        camadas.append(pydeck.Layer(
+            "GeoJsonLayer",
+            id="foco",
+            data={"type": "FeatureCollection", "features": contorno},
+            stroked=True,
+            filled=False,
+            get_line_color=_rgb(t["text_title"]) if t.get("text_title", "").startswith("#") else [36, 41, 47],
+            line_width_min_pixels=2.5,
+            pickable=False,
+        ))
 
     mapa_deck = pydeck.Deck(
         layers=camadas,

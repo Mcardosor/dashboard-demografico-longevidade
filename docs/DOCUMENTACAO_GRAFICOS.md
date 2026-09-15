@@ -43,6 +43,31 @@ posição do estado no recorte em vez da proporção dele. Preso em
 O custo assumido é o da tabela acima: contraste dentro de um ano trocado
 por comparabilidade entre anos.
 
+**Clicar num estado põe o painel nos dados dele.** KPIs, sexo, pirâmide e
+evolução passam a ser só daquele estado; o hero diz "PE em foco". Clicar de
+novo (ou no ✕ que o Streamlit põe sobre o mapa) solta. O recorte do seletor
+continua valendo como **contexto**: o mapa e a tabela seguem mostrando o
+recorte inteiro — o estado em foco opaco e com contorno grosso, os outros
+esmaecidos (`ALFA_FORA_DE_FOCO`) — porque é no mapa que se escolhe o
+próximo. Se o mapa passasse a mostrar só o estado clicado, não haveria onde
+clicar para trocar.
+
+Três decisões de implementação que valem saber:
+
+- **Sem `st.rerun()`.** O clique chega por `on_select="rerun"` e é lido de
+  `st.session_state[chave_mapa]` **antes** de o mapa ser desenhado — o
+  Streamlit expõe o estado da interação anterior desde o início do run. É o
+  que permite os KPIs, que ficam acima do mapa, já saírem filtrados.
+- **A chave do widget muda com o recorte.** A seleção do widget sobrevive à
+  troca de recorte: com MG em foco, ir para "Sul" soltava o foco e voltar
+  para "Todos" trazia MG de volta sozinho. Chave nova a cada recorte é
+  widget novo, sem memória. O foco sobrevive à troca de **ano**, de
+  propósito — comparar 2026 e 2050 do mesmo estado é uma leitura que vale.
+- **A página não pula para o topo.** O script do botão de tema rolava a
+  página ao topo a cada rerun, e o mapa fica no meio da página: o leitor
+  clicava e era jogado para longe do que tinha clicado. Agora rola só no
+  primeiro carregamento.
+
 **A roda do mouse não dá zoom.** Rolar a página com o cursor sobre o mapa
 aplicava zoom e desenquadrava — e o mapa ocupa meia tela, então acontecia o
 tempo todo. O caminho declarativo não existe: o Streamlit passa

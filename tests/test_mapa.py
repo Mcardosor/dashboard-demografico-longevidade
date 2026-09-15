@@ -442,3 +442,70 @@ def test_disco_nao_deixa_string_virar_acessor(todas_ufs):
         for chave, valor in camada.items():
             if isinstance(valor, str) and valor.startswith("@@="):
                 assert valor.startswith("@@=properties."), f"{chave}={valor}"
+
+
+# ── Estado em foco (clique no mapa) ──────────────────────────────────────────
+# Pedido: clicar num estado põe o painel nos dados dele. O mapa não muda de
+# enquadramento — continua sendo o controle para escolher outro —, só destaca
+# o clicado e esmaece o resto.
+
+def _camadas(spec: dict) -> dict[str, dict]:
+    return {c["id"]: c for c in spec["layers"]}
+
+
+def test_camadas_clicaveis_tem_id_estavel(todas_ufs):
+    """O Streamlit devolve a seleção chaveada por id de camada. Sem id fixo o
+    pydeck inventa um por render e `uf_selecionada` não acha nada."""
+    spec = json.loads(mapa.deck(_dados(todas_ufs), TEMA).to_json())
+    assert mapa.CAMADA_UFS in _camadas(spec)
+    assert _camadas(spec)[mapa.CAMADA_UFS]["pickable"] is True
+
+
+def test_foco_esmaece_as_outras_e_mantem_a_cor_da_focada(todas_ufs):
+    spec = json.loads(mapa.deck(_dados(todas_ufs), TEMA, foco="PE").to_json())
+    feicoes = _camadas(spec)[mapa.CAMADA_UFS]["data"]["features"]
+    cores = {f["properties"]["uf"]: f["properties"]["cor"] for f in feicoes}
+    assert len(cores["PE"]) == 3, "a UF em foco fica opaca"
+    outras = [c for uf, c in cores.items() if uf != "PE"]
+    assert all(len(c) == 4 and c[3] == mapa.ALFA_FORA_DE_FOCO for c in outras)
+
+
+def test_foco_ganha_contorno_por_cima_e_nao_clicavel(todas_ufs):
+    """O contorno é uma camada só de traço, por cima, com `pickable=False`:
+    o clique atravessa para a camada de baixo, que é a que seleciona."""
+    spec = json.loads(mapa.deck(_dados(todas_ufs), TEMA, foco="PE").to_json())
+    camadas = _camadas(spec)
+    assert "foco" in camadas
+    assert spec["layers"][-1]["id"] == "foco"
+    assert camadas["foco"]["pickable"] is False
+    assert camadas["foco"]["filled"] is False
+    ufs = [f["properties"]["uf"] for f in camadas["foco"]["data"]["features"]]
+    assert ufs == ["PE"]
+
+
+def test_foco_fora_do_recorte_e_ignorado():
+    """Com o recorte no Sul e o clique anterior em MG, não há foco."""
+    spec = json.loads(mapa.deck(_dados(REGIOES["Sul"]), TEMA, foco="MG").to_json())
+    camadas = _camadas(spec)
+    assert "foco" not in camadas
+    feicoes = camadas[mapa.CAMADA_UFS]["data"]["features"]
+    assert all(len(f["properties"]["cor"]) == 3 for f in feicoes)
+
+
+def test_foco_nao_muda_o_enquadramento(todas_ufs):
+    """O mapa em foco continua mostrando o recorte inteiro, no mesmo lugar."""
+    sem = json.loads(mapa.deck(_dados(todas_ufs), TEMA).to_json())
+    com = json.loads(mapa.deck(_dados(todas_ufs), TEMA, foco="AM").to_json())
+    assert sem["initialViewState"] == com["initialViewState"]
+
+
+@pytest.mark.parametrize("evento, esperado", [
+    (None, None),
+    ({}, None),
+    ({"selection": {"indices": {}, "objects": {}}}, None),
+    ({"selection": {"objects": {mapa.CAMADA_UFS: [{"properties": {"uf": "PE"}}]}}}, "PE"),
+    ({"selection": {"objects": {mapa.CAMADA_AMPLIADAS: [{"properties": {"uf": "DF"}}]}}}, "DF"),
+    ({"selection": {"objects": {"outra": [{"properties": {"uf": "SP"}}]}}}, None),
+])
+def test_uf_selecionada_le_o_evento_do_streamlit(evento, esperado):
+    assert mapa.uf_selecionada(evento) == esperado

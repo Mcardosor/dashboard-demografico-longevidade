@@ -140,6 +140,34 @@ with col_estados:
         st.markdown("<div style='height:1.8rem'></div>", unsafe_allow_html=True)
         st.caption(f"{recorte}: {', '.join(ufs_sel)}.")
 
+# ── Estado em foco ───────────────────────────────────────────────────────────
+# Clicar num estado do mapa põe o painel inteiro nos dados dele — KPIs,
+# pirâmide, sexo e evolução. Clicar de novo solta. O recorte (seletor acima)
+# continua valendo: é o **contexto** — o mapa e a tabela seguem mostrando o
+# recorte, com o estado em foco destacado, para que dê para clicar em outro.
+#
+# O valor vem do `st.session_state` do widget do mapa — o estado da
+# interação anterior. O Streamlit expõe isso antes de o widget ser desenhado
+# no run atual, e é o que permite ler o clique aqui em cima, onde os KPIs
+# precisam dele, sem um `st.rerun()` a mais.
+#
+# A chave do widget muda quando o recorte muda. Sem isso a seleção sobrevive
+# à troca de recorte: com MG em foco, ir para "Sul" soltava o foco (MG não
+# está lá), mas voltar para "Todos" trazia MG de volta sozinho — o widget
+# ainda lembrava o clique. Chave nova é widget novo, sem memória. O foco
+# sobrevive à troca de **ano**, de propósito: comparar 2026 e 2050 do mesmo
+# estado é uma leitura que vale.
+ufs_recorte = ufs_sel
+if st.session_state.get("mapa_recorte") != tuple(ufs_recorte):
+    st.session_state["mapa_recorte"] = tuple(ufs_recorte)
+    st.session_state["mapa_versao"] = st.session_state.get("mapa_versao", 0) + 1
+chave_mapa = f"mapa-{st.session_state['mapa_versao']}"
+
+uf_foco = mapa.uf_selecionada(st.session_state.get(chave_mapa))
+if uf_foco not in ufs_recorte:
+    uf_foco = None
+ufs_sel = [uf_foco] if uf_foco else ufs_recorte
+
 # ── Dados ─────────────────────────────────────────────────────────────────────
 df_raw             = carregar_dados(ano_sel)
 df_proc, df_idosos = processar_dados(df_raw)
@@ -154,6 +182,8 @@ n_ufs     = df_proc["uf"].nunique()
 # ── Métricas filtradas ────────────────────────────────────────────────────────
 df_filt    = df_proc[df_proc["uf"].isin(ufs_sel)]
 df_id_filt = df_idosos[df_idosos["uf"].isin(ufs_sel)]
+# O mapa e a tabela mostram o recorte inteiro, não só o foco.
+df_id_recorte = df_idosos[df_idosos["uf"].isin(ufs_recorte)]
 
 def _indicadores(d):
     """Os números dos KPIs, para um recorte de UFs e um ano.
@@ -188,7 +218,8 @@ pop_filt = atual["total"]
 
 # ── Hero ──────────────────────────────────────────────────────────────────────
 _label_ufs = (
-    "Todos os estados" if len(ufs_sel) == n_ufs
+    f"{uf_foco} em foco" if uf_foco
+    else "Todos os estados" if len(ufs_sel) == n_ufs
     else f"{len(ufs_sel)} estado{'s' if len(ufs_sel) > 1 else ''} selecionado{'s' if len(ufs_sel) > 1 else ''}"
 )
 
@@ -252,25 +283,29 @@ col_mapa, col_top5 = st.columns([3, 2])
 
 with col_mapa:
     st.markdown(section_header("01", "Onde estão os 60+",
-        "Percentual da população com 60 anos ou mais em cada estado."), unsafe_allow_html=True)
-    st.pydeck_chart(mapa.deck(df_id_filt, t), use_container_width=True)
-    st.markdown(mapa.legenda(df_id_filt, t), unsafe_allow_html=True)
+        "Percentual da população com 60 anos ou mais em cada estado. "
+        "Clique num estado para ver só ele; clique de novo para voltar."), unsafe_allow_html=True)
+    st.pydeck_chart(
+        mapa.deck(df_id_recorte, t, foco=uf_foco), use_container_width=True,
+        on_select="rerun", selection_mode="single-object", key=chave_mapa,
+    )
+    st.markdown(mapa.legenda(df_id_recorte, t), unsafe_allow_html=True)
     # Altura 0: o componente só carrega script, não desenha nada.
     st.components.v1.html(script_travar_zoom(), height=0)
 
 with col_top5:
     st.markdown(section_header("02", "Estados mais envelhecidos",
         "Os 15 primeiros, com o valor exato que o mapa não mostra."), unsafe_allow_html=True)
-    top_n = min(15, len(df_id_filt))
+    top_n = min(15, len(df_id_recorte))
     top15 = (
-        df_id_filt[["uf", "pct_idosos", "idosos"]]
+        df_id_recorte[["uf", "pct_idosos", "idosos"]]
         .sort_values("pct_idosos", ascending=False).head(top_n)
         .rename(columns={"uf": "UF", "pct_idosos": "% 60+", "idosos": "Pessoas 60+"})
         .reset_index(drop=True)
     )
     top15["% 60+"]       = top15["% 60+"].map("{:.2f}%".format)
     top15["Pessoas 60+"] = top15["Pessoas 60+"].map("{:,.0f}".format)
-    st.markdown(html_top5(top15, t), unsafe_allow_html=True)
+    st.markdown(html_top5(top15, t, destaque=uf_foco), unsafe_allow_html=True)
 
 st.divider()
 

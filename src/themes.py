@@ -558,8 +558,16 @@ _THEME_TOGGLE_JS = """
   var obs = new p.MutationObserver(function() { ensureButton(); });
   obs.observe(p.document.body, { childList: true });
 
-  // Evitar auto-scroll do Streamlit que empurra a marca-bar para cima
-  setTimeout(function() { p.scrollTo(0, 0); }, 300);
+  // Evitar o auto-scroll do Streamlit que empurra a marca-bar para cima —
+  // mas SÓ no primeiro carregamento. Este script roda de novo a cada rerun
+  // (o iframe do componente é recriado), e sem a trava ele mandava a página
+  // para o topo a cada interação: trocar o ano, e principalmente clicar num
+  // estado do mapa, que fica no meio da página — o leitor clicava e era
+  // jogado para longe do que tinha acabado de clicar.
+  if (!p.__longevidadeRolouAoTopo) {
+    p.__longevidadeRolouAoTopo = true;
+    setTimeout(function() { p.scrollTo(0, 0); }, 300);
+  }
 })();
 </script>
 """
