@@ -529,7 +529,14 @@ def deck(df_idosos: pd.DataFrame, t: dict, foco: str | None = None) -> pydeck.De
     if foco:
         # Contorno grosso só na UF em foco, por cima de tudo. Não é clicável:
         # o clique atravessa para a camada de baixo, que é a que seleciona.
-        contorno = [f for f in feicoes if f["properties"]["uf"] == foco]
+        #
+        # A feição vem da camada ampliada quando a UF está nela (DF): o
+        # contorno tem que envolver o polígono que o leitor vê, não o original
+        # minúsculo escondido debaixo dele.
+        visiveis = list(feicoes)
+        if ampliadas is not None:
+            visiveis = ampliadas.data["features"] + visiveis
+        contorno = [next(f for f in visiveis if f["properties"]["uf"] == foco)]
         camadas.append(pydeck.Layer(
             "GeoJsonLayer",
             id="foco",

@@ -32,6 +32,7 @@ Três cuidados que a planilha exige, e que este script cumpre:
 
 from __future__ import annotations
 
+import glob
 import os
 import sys
 
@@ -97,9 +98,22 @@ def ler_tab4(caminho: str) -> pd.DataFrame:
     return df.astype({"ano": "int16"})
 
 
+def _planilha(pasta: str, sufixo: str) -> str:
+    """O caminho da planilha `projecoes_<revisão>_<sufixo>.xlsx` na pasta.
+
+    O ano da revisão não é fixo: a próxima virá como `projecoes_2026_*` e o
+    script precisa servir a ela sem edição. Exatamente um arquivo deve casar
+    — duas revisões na mesma pasta é ambiguidade, não escolha.
+    """
+    achados = sorted(glob.glob(os.path.join(pasta, f"projecoes_*_{sufixo}.xlsx")))
+    if len(achados) != 1:
+        sys.exit(f"esperava 1 arquivo projecoes_*_{sufixo}.xlsx em {pasta}, achei {len(achados)}: {achados}")
+    return achados[0]
+
+
 def main(pasta: str) -> None:
-    tab1 = os.path.join(pasta, "projecoes_2024_tab1_idade_simples.xlsx")
-    tab4 = os.path.join(pasta, "projecoes_2024_tab4_indicadores.xlsx")
+    tab1 = _planilha(pasta, "tab1_idade_simples")
+    tab4 = _planilha(pasta, "tab4_indicadores")
 
     pop = ler_tab1(tab1)
     assert pop["uf"].nunique() == 27, pop["uf"].nunique()

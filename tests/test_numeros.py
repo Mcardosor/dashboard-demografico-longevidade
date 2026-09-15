@@ -136,3 +136,45 @@ def test_e60_cresce_no_periodo_em_toda_uf():
 
 def test_e60_de_recorte_vazio_nao_quebra():
     assert esperanca_aos_60([], 2025) == 0.0
+
+
+# ── Evolução: o que a revisão de 15/set/2026 achou ──────────────────────────
+
+def _fig_evolucao(ufs):
+    from src.charts import fig_evolucao
+    from src.data import carregar_evolucao
+    from src.themes import THEMES
+    return fig_evolucao(carregar_evolucao.__wrapped__(), ufs, THEMES["light"])
+
+
+def _anotacao_do_pico(fig):
+    return next(a for a in fig.layout.annotations if a.text.startswith("pico"))
+
+
+@pytest.mark.parametrize("uf", ["RS", "AL", "RJ"])
+def test_pico_logo_apos_a_fronteira_nao_cobre_o_rotulo(uf):
+    """RS e AL viram em 2026, RJ em 2027 — a anotação do pico caía em cima de
+    'projeção do IBGE →', que mora no topo, à direita de 2022."""
+    a = _anotacao_do_pico(_fig_evolucao([uf]))
+    assert a.xanchor == "right" and a.ay > 0, "texto à esquerda e abaixo do ponto"
+
+
+def test_pico_na_borda_direita_nao_e_cortado():
+    """MT ainda cresce em 2070: centrado na borda, o texto saía pela margem."""
+    a = _anotacao_do_pico(_fig_evolucao(["MT"]))
+    assert a.xanchor == "right"
+
+
+def test_pico_no_meio_fica_centrado_acima():
+    a = _anotacao_do_pico(_fig_evolucao(["SP"]))
+    assert a.xanchor == "center" and a.ay < 0
+
+
+def test_hover_de_2022_aparece_uma_vez_so():
+    """2022 entra nas duas séries para a linha não ter buraco; no tooltip
+    unificado ele aparecia duas vezes com o mesmo número."""
+    fig = _fig_evolucao(["SP"])
+    proj = fig.data[1]
+    assert int(proj.x[0]) == ESTIMATIVA_ATE
+    assert proj.hoverinfo[0] == "skip"
+    assert all(h == "all" for h in proj.hoverinfo[1:])

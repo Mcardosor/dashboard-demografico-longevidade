@@ -190,8 +190,12 @@ def fig_evolucao(df_evo: pd.DataFrame, ufs: list, t: dict) -> go.Figure:
     df_tot["populacao_M"] = df_tot["populacao"] / 1_000_000
 
     # O ponto da fronteira entra nas duas séries, para a linha não ter buraco.
+    # Mas o hover dele fica só na estimativa: com `hovermode="x unified"` o
+    # ponto repetido aparecia duas vezes no tooltip de 2022, com o mesmo
+    # número — dois dados onde há um.
     est  = df_tot[df_tot["ano"] <= ESTIMATIVA_ATE]
     proj = df_tot[df_tot["ano"] >= ESTIMATIVA_ATE]
+    hover_proj = ["skip" if a == ESTIMATIVA_ATE else "all" for a in proj["ano"]]
 
     hover = "<b>%{x}</b><br>%{y:.2f}M habitantes<extra>%{fullData.name}</extra>"
     fig = go.Figure([
@@ -203,17 +207,35 @@ def fig_evolucao(df_evo: pd.DataFrame, ufs: list, t: dict) -> go.Figure:
         go.Scatter(
             x=proj["ano"], y=proj["populacao_M"], name="Projeção",
             mode="lines", line=dict(color=t["accent"], width=2.5, dash="dash"),
-            hovertemplate=hover,
+            hovertemplate=hover, hoverinfo=hover_proj,
         ),
     ])
 
     # O pico: onde a série vira. É o número que o gráfico existe para mostrar.
+    #
+    # A âncora do texto depende de onde o pico cai. Ele está sempre no topo
+    # do gráfico — é o máximo —, e no topo também mora o rótulo da fronteira,
+    # à direita de 2022. Um pico logo depois da fronteira (RS e AL em 2026,
+    # RJ em 2027) punha os dois textos um sobre o outro; um pico em 2070 (MT)
+    # ficava centrado na borda direita e era cortado pela margem.
     pico = df_tot.loc[df_tot["populacao_M"].idxmax()]
+    ano_pico = int(pico["ano"])
+    x_min, x_max = int(df_tot["ano"].min()), int(df_tot["ano"].max())
+    perto_da_fronteira = ESTIMATIVA_ATE < ano_pico <= ESTIMATIVA_ATE + 10
+    perto_da_borda = ano_pico >= x_max - 8
+    if perto_da_fronteira or perto_da_borda:
+        # Texto à esquerda do ponto, e descendo em vez de subindo, para sair
+        # da faixa do topo onde está o rótulo da fronteira.
+        xanchor, ax, ay = "right", -14, 28
+    elif ano_pico <= x_min + 8:
+        xanchor, ax, ay = "left", 14, 28
+    else:
+        xanchor, ax, ay = "center", 0, -32
     fig.add_annotation(
-        x=pico["ano"], y=pico["populacao_M"],
-        text=f"pico em {int(pico['ano'])}: {pico['populacao_M']:.1f} M",
+        x=ano_pico, y=pico["populacao_M"], xanchor=xanchor,
+        text=f"pico em {ano_pico}: {pico['populacao_M']:.1f} M",
         showarrow=True, arrowhead=0, arrowcolor=t["text_muted"],
-        ax=0, ay=-32, font=dict(size=11, color=t["text"]),
+        ax=ax, ay=ay, font=dict(size=11, color=t["text"]),
     )
 
     fig.add_vline(

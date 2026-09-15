@@ -509,3 +509,20 @@ def test_foco_nao_muda_o_enquadramento(todas_ufs):
 ])
 def test_uf_selecionada_le_o_evento_do_streamlit(evento, esperado):
     assert mapa.uf_selecionada(evento) == esperado
+
+
+def test_contorno_do_foco_envolve_a_feicao_ampliada(todas_ufs):
+    """Achado de revisão: com o DF em foco, o contorno era desenhado sobre o
+    polígono original minúsculo, escondido debaixo da cópia ampliada que o
+    leitor vê. Tem que envolver o que está na tela."""
+    spec = json.loads(mapa.deck(_dados(todas_ufs), TEMA, foco="DF").to_json())
+    camadas = _camadas(spec)
+    assert mapa.CAMADA_AMPLIADAS in camadas, "o DF é ampliado no enquadramento do país"
+    ampliada = next(f for f in camadas[mapa.CAMADA_AMPLIADAS]["data"]["features"]
+                    if f["properties"]["uf"] == "DF")
+    original = next(f for f in camadas[mapa.CAMADA_UFS]["data"]["features"]
+                    if f["properties"]["uf"] == "DF")
+    contorno = camadas["foco"]["data"]["features"]
+    assert len(contorno) == 1
+    assert contorno[0]["geometry"] == ampliada["geometry"]
+    assert contorno[0]["geometry"] != original["geometry"]
